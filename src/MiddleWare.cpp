@@ -50,13 +50,9 @@ static constexpr std::chrono::duration<int64_t, std::milli> ACK_TIMEOUT = std::c
 
 void MiddleWare::rxTxLoop()
 {
-    while (!m_stop)
-    {
-        listenRxSocket();
-        checkPendingTxMessages();
-        checkPendingCommands();
-        usleep(100000); // Sleep for 100 milliseconds
-    }
+    listenRxSocket();
+    checkPendingTxMessages();
+    checkPendingCommands();
 }
 
 void MiddleWare::listenRxSocket()
@@ -156,7 +152,7 @@ void MiddleWare::processRxMessage(rgc::payload_t &payload, struct sockaddr_in co
 
         if (txMsgState == nullptr)
         {
-            if (isAckFrame)
+            if (!isAckFrame)
             {
                 // No such message found in the state, set up anew
                 m_txMessageStates.emplace_back(TxMessageState(msgId, m_txSockets, payload));

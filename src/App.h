@@ -14,7 +14,7 @@ namespace rgc
 class App : public IApp
 {
 public:
-    App(config_t const &config, IRxSocket *pRxSocket, std::vector<ITxSocket *> &txSockets);
+    App(IRxSocket *pRxSocket, std::vector<ITxSocket *> &txSockets);
     virtual ~App();
     virtual void deliverMessage(MessageId msgId, payload_t const &payload) const;
     virtual void run();

@@ -21,16 +21,19 @@ typedef struct
 class MessageId final
 {
 public:
-    MessageId(peerId_t peerId, seqNr_t seqNr) : m_peerId(peerId), m_msgId(seqNr) {}
+    MessageId(peerId_t peerId, seqNr_t seqNr) : m_peerId(peerId), m_seqNr(seqNr) {}
 
     bool operator == (MessageId const &rhs) const
     {
-        return (m_peerId == rhs.m_peerId) && (m_msgId == rhs.m_msgId);
+        return (m_peerId == rhs.m_peerId) && (m_seqNr == rhs.m_seqNr);
     }
+
+    peerId_t getPeerId() const { return m_peerId; };
+    seqNr_t getSeqNr() const { return m_seqNr; };
 
 private:
     peerId_t m_peerId;
-    seqNr_t m_msgId;
+    seqNr_t m_seqNr;
 };
 
 typedef std::vector<char> payload_t; 

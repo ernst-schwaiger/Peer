@@ -23,7 +23,7 @@ class UdpTxSocket : public ITxSocket
 public:
     UdpTxSocket(peer_t const &peer);
     virtual ~UdpTxSocket();
-    virtual TransmitStatus send(payload_t payload) const;
+    virtual TransmitStatus send(payload_t const &payload) const;
 
     virtual struct ::sockaddr_in const &getRemoteSocketAddr() const
     {

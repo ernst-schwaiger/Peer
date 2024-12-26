@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
         txSockets.push_back(udpTxSockets.back().get());
     }    
 
-    App myApp(*optConfig, udpRxSocket.get(), txSockets);
+    App myApp(udpRxSocket.get(), txSockets);
     myApp.run();
 
     return 0;

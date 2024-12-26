@@ -123,8 +123,7 @@ private:
 class MiddleWare
 {
 public:
-    MiddleWare(config_t const &config, rgc::IApp *pApp, rgc::IRxSocket *pRxSocket, std::vector<ITxSocket *> &txSockets) : 
-        m_config(config),
+    MiddleWare(rgc::IApp *pApp, rgc::IRxSocket *pRxSocket, std::vector<ITxSocket *> &txSockets) : 
         m_pApp(pApp),
         m_pRxSocket(pRxSocket),
         m_txSockets(txSockets),
@@ -133,8 +132,6 @@ public:
     }
 
     void rxTxLoop();
-
-    void doSend();
 
 private:
 
@@ -156,8 +153,6 @@ private:
         return (it == end(m_txMessageStates)) ? nullptr : &m_txMessageStates[std::distance(begin(m_txMessageStates), it)];
     }
 
-
-    config_t const &m_config;
     rgc::IApp *m_pApp;
     rgc::IRxSocket *m_pRxSocket;
     std::vector<ITxSocket *> &m_txSockets;

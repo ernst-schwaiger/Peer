@@ -74,7 +74,7 @@ UdpTxSocket::~UdpTxSocket()
     close(m_socketDesc);
 }
 
-TransmitStatus UdpTxSocket::send(payload_t payload) const
+TransmitStatus UdpTxSocket::send(payload_t const &payload) const
 {
     TransmitStatus ret = { 0, 0 };
     ssize_t sentBytes = sendto(
