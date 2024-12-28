@@ -165,8 +165,12 @@ private:
     void checkPendingCommands(std::chrono::system_clock::time_point const &now);
     void processTxMessage(TxState &txState, payload_t const &msg, std::chrono::system_clock::time_point const &now);
     void processRxMessage(rgc::payload_t const &payload, struct sockaddr_in const &remoteSockAddr, std::chrono::system_clock::time_point const &now);
+    void processRxAckMessage(rgc::payload_t const &payload, peerId_t peerId, struct sockaddr_in const &remoteSockAddr);
+    void processRxDataMessage(rgc::payload_t const &payload, peerId_t peerId, ITxSocket *txSocket, std::chrono::system_clock::time_point const &now);
+    rgc::payload_t makeAckMessage(rgc::payload_t const &dataMessage) const;
+    
 
-    bool areRemoteIpUdpPortSupported(struct sockaddr_in const &remoteSockAddr) const;
+    ITxSocket *getTxSocketForRemoteAddress(struct sockaddr_in const &remoteSockAddr) const;
     bool isPeerSupported(peerId_t peerId) const;
     bool isSeqNrOfPeerAccepted(peerId_t peerId, seqNr_t seqNr) const;
     void setAcceptedSeqNrOfPeer(peerId_t peerId, seqNr_t seqNr);

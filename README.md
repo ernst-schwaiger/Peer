@@ -17,8 +17,8 @@ ctest --output-on-failure
 * Error Injection
 * Command Interface/Named Pipe
 * RFC 1071 CRC Implementation
-
-* Send an ACK back to sending node instead of the same Data 
+* Send every message to "ourselves"
+* For Message Id/CRC calculation in payload use uint8_t* instead of char*
 * Check if we lose incoming Udp Packets due to async Rx processing
 
 ## Open for Clarification

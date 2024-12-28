@@ -10,7 +10,6 @@ using namespace rgc;
 using namespace std::chrono;
 
 static constexpr duration<int64_t, std::milli> ACK_TIMEOUT = milliseconds(1000);
-constexpr duration<int64_t, std::milli> TX_CLIENT_DELAY = std::chrono::milliseconds(1000);
 
 void MiddleWare::rxTxLoop(system_clock::time_point const &now)
 {
@@ -145,7 +144,9 @@ void MiddleWare::processTxMessage(TxState &txState, payload_t const &msg, system
 
 void MiddleWare::processRxMessage(rgc::payload_t const &payload, struct sockaddr_in const &remoteSockAddr, system_clock::time_point const &now)
 {
-    if (!areRemoteIpUdpPortSupported(remoteSockAddr))
+    ITxSocket *txSocket = getTxSocketForRemoteAddress(remoteSockAddr);
+
+    if (txSocket == nullptr)
     {
         m_pApp->log(IApp::LOG_TYPE::WARN, fmt::format("Discarding rx message from unknown IP/Port: {}.", toString(remoteSockAddr)));
         return;
@@ -172,48 +173,76 @@ void MiddleWare::processRxMessage(rgc::payload_t const &payload, struct sockaddr
         return;
     }
 
-    bool isAckFrame = (payload.size() == sizeof(peerId_t) + sizeof(seqNr_t) + sizeof(checksum_t));
-    seqNr_t seqNr = (payload[2] << 8) + payload[3];
-    if (!isAckFrame && !isSeqNrOfPeerAccepted(peerId, seqNr))
+    bool isAckMessage = (payload.size() == sizeof(peerId_t) + sizeof(seqNr_t) + sizeof(checksum_t));
+
+    if (isAckMessage)
     {
-        m_pApp->log(IApp::LOG_TYPE::MSG, "Discarding rx message: Sequence Number.");
+        processRxAckMessage(payload, peerId, remoteSockAddr);
+    }
+    else
+    {
+        processRxDataMessage(payload, peerId, txSocket, now);
+    }
+}
+
+void MiddleWare::processRxAckMessage(rgc::payload_t const &payload, peerId_t peerId, struct sockaddr_in const &remoteSockAddr)
+{
+    seqNr_t seqNr = (payload[2] << 8) + payload[3];
+    MessageId msgId = MessageId(peerId, seqNr);
+    TxMessageState *txMsgState = findTxMsgState(msgId);
+
+    if (txMsgState != nullptr)
+    {
+        // Message found, check content
+        TxState *txState = txMsgState->findTxState(remoteSockAddr);
+        if (txState != nullptr)
+        {
+            txState->setAcknowledged();
+            m_pApp->log(IApp::LOG_TYPE::MSG, "Received ACK for sent message.");
+        }
+    }
+}
+
+void MiddleWare::processRxDataMessage(rgc::payload_t const &payload, peerId_t peerId, ITxSocket *txSocket, system_clock::time_point const &now)
+{
+    seqNr_t seqNr = (payload[2] << 8) + payload[3];
+    struct sockaddr_in const &remoteSockAddr = txSocket->getRemoteSocketAddr();
+    if (!isSeqNrOfPeerAccepted(peerId, seqNr))
+    {
+        m_pApp->log(IApp::LOG_TYPE::WARN, fmt::format("Discarding message due to SeqNr: {} from {}.", toString(payload), toString(remoteSockAddr)));
         return;
     }
-
-    // FIXME: Check that message with msgId has not been delivered yet
 
     MessageId msgId = MessageId(peerId, seqNr);
     TxMessageState *txMsgState = findTxMsgState(msgId);
 
     if (txMsgState == nullptr)
     {
-        if (!isAckFrame)
-        {
-            // No such message found in the state, set up anew
-            // FIXME: Transmission of ACK back to sender is missing.
-            m_txMessageStates.emplace_front(msgId, m_txSockets, payload, now);
-            setAcceptedSeqNrOfPeer(peerId, seqNr + 1);
-        }
+        // No such message found in the state, set up anew
+        // Transmission of ACK back to sender done here immediately
+        txSocket->send(makeAckMessage(payload));
+
+        m_pApp->log(IApp::LOG_TYPE::MSG, fmt::format("Received data message {} from {}.", toString(payload), toString(remoteSockAddr)));
+        m_txMessageStates.emplace_front(msgId, m_txSockets, payload, now);
+        setAcceptedSeqNrOfPeer(peerId, seqNr + 1);
     }
     else
     {
-        // Message found, check content
-        if (isAckFrame)
-        {
-            TxState *txState = txMsgState->findTxState(remoteSockAddr);
-            if (txState != nullptr)
-            {
-                txState->setAcknowledged();
-                m_pApp->log(IApp::LOG_TYPE::MSG, "Received ACK for sent message.");
-            }
-        }
-        else
-        {
-            // We have received that message already, ignore it here
-             m_pApp->log(IApp::LOG_TYPE::MSG, "Ignoring already received message.");
-        }
+        // We have received that message already, ignore it here
+        m_pApp->log(IApp::LOG_TYPE::MSG, fmt::format("Discarding already received message {} from {}.", toString(payload), toString(remoteSockAddr)));
     }
 }
+
+payload_t MiddleWare::makeAckMessage(payload_t const &dataMessage) const
+{
+    // Peer-Id
+    payload_t ret(begin(dataMessage), begin(dataMessage) + sizeof(peerId_t) + sizeof(seqNr_t));
+    checksum_t checksum = rfc1071Checksum(reinterpret_cast<uint8_t const *>(ret.data()), ret.size());
+    ret.push_back(checksum >> 8);
+    ret.push_back(checksum & 0xff);
+    return ret;
+}
+
 
 bool MiddleWare::isPeerSupported(peerId_t peerId) const
 {
@@ -222,7 +251,7 @@ bool MiddleWare::isPeerSupported(peerId_t peerId) const
     return (it != end(m_txSockets));
 }
 
-bool MiddleWare::areRemoteIpUdpPortSupported(struct sockaddr_in const &remoteSockAddr) const
+ITxSocket *MiddleWare::getTxSocketForRemoteAddress(struct sockaddr_in const &remoteSockAddr) const
 {
     auto it = std::find_if(begin(m_txSockets), end(m_txSockets),
         [&remoteSockAddr](auto const *txSocket)
@@ -234,7 +263,7 @@ bool MiddleWare::areRemoteIpUdpPortSupported(struct sockaddr_in const &remoteSoc
         }
     );
 
-    return (it != end(m_txSockets));
+    return (it != end(m_txSockets)) ? *it : nullptr;
 }
 
 
@@ -278,7 +307,7 @@ std::string MiddleWare::toString(rgc::payload_t const &payload)
 {
     stringstream ss;
 
-    if (payload.size() > 4)
+    if (payload.size() >= 4)
     {
         uint8_t const *pHeader = reinterpret_cast<uint8_t const *>(payload.data());
         ss << fmt::format("({},{})", (pHeader[0] << 8) + pHeader[1], (pHeader[2] << 8) + pHeader[3]);

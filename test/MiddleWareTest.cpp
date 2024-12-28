@@ -88,20 +88,20 @@ namespace rgc
         // Simulate reception from peer
         p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_1, 1, "test"));
         p.app.numLoops(1).run();
-        // Our node shall have sent the message back immediately
-        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 1);
-        p.app.numLoops(9).run();
-        // Our node shall wait for an ACK to arrive
-        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 1);
-        p.app.numLoops(1).run();
-        // No ACK arrived, our node repeats transmission
+        // Our node shall have sent the ack and also the message back immediately
         REQUIRE(p.txSocks[0].m_sentPayloads.size() == 2);
         p.app.numLoops(9).run();
-        // Our node shall wait for an ACK to arrive, no message delivered to app
+        // Our node shall wait for an ACK to arrive
         REQUIRE(p.txSocks[0].m_sentPayloads.size() == 2);
         p.app.numLoops(1).run();
         // No ACK arrived, our node repeats transmission
         REQUIRE(p.txSocks[0].m_sentPayloads.size() == 3);
+        p.app.numLoops(9).run();
+        // Our node shall wait for an ACK to arrive, no message delivered to app
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 3);
+        p.app.numLoops(1).run();
+        // No ACK arrived, our node repeats transmission
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 4);
         p.app.numLoops(9).run();
         // Our node shall wait for an ACK to arrive, no message delivered to app
         REQUIRE(p.app.deliveredMsgs.empty());
@@ -109,7 +109,7 @@ namespace rgc
         REQUIRE(p.app.deliveredMsgs.size() == 1);
         // Nothing more shall happen in our node
         p.app.numLoops(100).run(); 
-        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 3); 
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 4); 
         REQUIRE(p.app.deliveredMsgs.size() == 1);     
     }
 
@@ -124,8 +124,8 @@ namespace rgc
         p.app.numLoops(1).run();
         
         // Our node shall have sent the messages back immediately
-        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 2);
-        REQUIRE(p.txSocks[1].m_sentPayloads.size() == 0); // That one gets sent a second later
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 3); // Ack plus resend to two peers
+        REQUIRE(p.txSocks[1].m_sentPayloads.size() == 1); // Ack only, resend happens a sec later
 
         // We receive the acks of our peers
         // FIXME: Continue here
@@ -139,15 +139,15 @@ namespace rgc
         // Simulate reception from peer
         p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_1, 1,"test"));
         p.app.numLoops(1).run();
-        // Must have been sent immediately
-        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 1);
+        // Must have been answered with ack and must be resent immediately
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 2);
         // Simulate ack reception
         p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_1, 1));
         p.app.numLoops(1).run();
         // Message must have been delivered  
         REQUIRE(p.app.deliveredMsgs.size() == 1);
         p.app.numLoops(100).run();
-        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 1);
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 2);
         REQUIRE(p.app.deliveredMsgs.size() == 1);
     }
 
@@ -181,8 +181,8 @@ namespace rgc
         // Simulate reception from peer
         p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_1, 1,"test"));
         p.app.numLoops(1).run();
-        // Must have been sent immediately
-        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 1);
+        // Must have been Acked and resent immediately
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 2);
         // Simulate ack reception
         p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_1, 1));
         p.app.numLoops(1).run();
@@ -192,7 +192,7 @@ namespace rgc
         // Same seq number received again, now it is discarded
         p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_1, 1,"test"));
         p.app.numLoops(100).run();
-        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 1);
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 2);
         REQUIRE(p.app.deliveredMsgs.size() == 1);
     }
 }
