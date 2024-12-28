@@ -4,6 +4,7 @@
 #include <forward_list>
 #include <chrono>
 #include <algorithm>
+#include <cctype>
 
 #include "CommonTypes.h"
 #include "ConfigParser.h"
@@ -78,7 +79,7 @@ private:
 class TxMessageState final
 {
 public:
-    TxMessageState(MessageId msgId, std::vector<ITxSocket *> txSockets, rgc::payload_t &payload, std::chrono::system_clock::time_point now) :
+    TxMessageState(MessageId msgId, std::vector<ITxSocket *> txSockets, rgc::payload_t const &payload, std::chrono::system_clock::time_point now) :
         m_msgId(msgId),
         m_payload(payload)
     {
@@ -162,12 +163,15 @@ private:
     void listenRxSocket(std::chrono::system_clock::time_point const &now);
     void checkPendingTxMessages(std::chrono::system_clock::time_point const &now);
     void checkPendingCommands(std::chrono::system_clock::time_point const &now);
-    void processTxMessage(TxState &txState, std::vector<char> const &msg, std::chrono::system_clock::time_point const &now);
-    void processRxMessage(rgc::payload_t &payload, struct sockaddr_in const &remoteSockAddr, std::chrono::system_clock::time_point const &now);
+    void processTxMessage(TxState &txState, payload_t const &msg, std::chrono::system_clock::time_point const &now);
+    void processRxMessage(rgc::payload_t const &payload, struct sockaddr_in const &remoteSockAddr, std::chrono::system_clock::time_point const &now);
 
     bool isPeerSupported(peerId_t peerId) const;
     bool isSeqNrOfPeerAccepted(peerId_t peerId, seqNr_t seqNr) const;
     void setAcceptedSeqNrOfPeer(peerId_t peerId, seqNr_t seqNr);
+
+    static std::string toString(struct sockaddr_in const &sockAddr);
+    static std::string toString(rgc::payload_t const &payload);
 
     void injectError(rgc::payload_t &payload) const;
 

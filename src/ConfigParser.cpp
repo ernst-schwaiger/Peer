@@ -122,7 +122,7 @@ static vector<peer_t> readConfigFile(string const &configFilePath)
 std::optional<config_t> rgc::getConfigFromOptions(int argc, char *argv[])
 {
     optional<config_t> ret;
-    config_t parsed_values{ DEFAULT_PEER_ID, DEFAULT_PORT_NUM, nullptr, {} };
+    config_t parsed_values{ DEFAULT_PEER_ID, DEFAULT_PORT_NUM, "", {} };
     bool error = false;   
     char c;
     string configFile = DEFAULT_CONFIG_FILE;
@@ -184,12 +184,15 @@ std::optional<config_t> rgc::getConfigFromOptions(int argc, char *argv[])
             error = true;
         }
 
-        path logFilePath(parsed_values.logFile);
-        path logFileFolderPath = logFilePath.parent_path();
-        if (!exists(logFileFolderPath) || !is_directory(logFileFolderPath))
+        if (parsed_values.logFile.length())
         {
-            cerr << parsed_values.logFile << " must be in a folder which already exists.\n";
-            error = true;
+            path logFilePath(parsed_values.logFile);
+            path logFileFolderPath = logFilePath.parent_path();
+            if (!exists(logFileFolderPath) || !is_directory(logFileFolderPath))
+            {
+                cerr << parsed_values.logFile << " must be in a folder which already exists.\n";
+                error = true;
+            }
         }
 
         path cfgFilePath(configFile);

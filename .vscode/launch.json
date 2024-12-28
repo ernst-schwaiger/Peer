@@ -33,7 +33,7 @@
             "type": "cppdbg",
             "request": "launch",
 
-            "program": "${workspaceFolder}/build/MiddleWareTest",
+            "program": "${workspaceFolder}/build/PeerTest",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

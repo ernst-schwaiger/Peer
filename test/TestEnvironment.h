@@ -8,6 +8,7 @@
 #include "ISocket.h"
 #include "IApp.h"
 #include "MiddleWare.h"
+#include "Logger.h"
 
 
 using namespace std;
@@ -97,6 +98,7 @@ class TestApp : public IApp
 public:
     TestApp(IRxSocket *pRxSocket, std::vector<ITxSocket *> &txSockets, size_t numLoops = 10) : 
         m_middleWare(this, pRxSocket, txSockets),
+        m_logger(),
         m_numLoops(numLoops),
         m_now() 
     {}
@@ -122,10 +124,32 @@ public:
         return *this;
     }
 
+    void log(LOG_TYPE type, std::string const &msg)
+    {
+        switch(type)
+        {
+            case LOG_TYPE::DEBUG:
+                m_logger.logDebug(msg, m_now);
+                break;
+            case LOG_TYPE::ERR:
+                m_logger.logErr(msg, m_now);
+                break;
+            case LOG_TYPE::WARN:
+                m_logger.logWarn(msg, m_now);
+                break;
+            case LOG_TYPE::MSG:
+                m_logger.logMsg(msg, m_now);
+                break;
+            default:
+                assert(false);
+        }
+    }
+
     mutable std::vector<msgId_payload_t> deliveredMsgs;
 
 private:
     MiddleWare m_middleWare;
+    Logger m_logger;
     size_t m_numLoops;
     std::chrono::system_clock::time_point m_now;
 };

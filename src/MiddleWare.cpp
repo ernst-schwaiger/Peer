@@ -1,4 +1,7 @@
 #include <numeric>
+#include <fmt/core.h>
+#include <sstream>
+#include <iomanip>
 
 #include "MiddleWare.h"
 
@@ -118,13 +121,14 @@ void MiddleWare::checkPendingCommands(system_clock::time_point const &now)
     // FIXME: Implement this
 }
 
-void MiddleWare::processTxMessage(TxState &txState, vector<char> const &msg, system_clock::time_point const &now)
+void MiddleWare::processTxMessage(TxState &txState, payload_t const &msg, system_clock::time_point const &now)
 {
     uint8_t remainingTxAttempts = txState.getRemainingTxAttempts();
     if (remainingTxAttempts == 0)
     {
         // we did not get an ACK after the third tx attempt. we handle this case
         // as if it got an ACK
+        m_pApp->log(IApp::LOG_TYPE::WARN, "Got no ACK after max number of retries, giving up.");
         txState.setAcknowledged();
     }
     else
@@ -133,26 +137,32 @@ void MiddleWare::processTxMessage(TxState &txState, vector<char> const &msg, sys
         system_clock::time_point timeout = now + ACK_TIMEOUT;
         txState.setTimeout(timeout);
         txState.setRemainingTxAttempts(remainingTxAttempts - 1);
+        
+        auto const &remoteSockAddr = txState.getSocket()->getRemoteSocketAddr();
+        m_pApp->log(IApp::LOG_TYPE::MSG, fmt::format("Sending message {} to {}.", toString(msg), toString(remoteSockAddr)));
     }
 }
 
-void MiddleWare::processRxMessage(rgc::payload_t &payload, struct sockaddr_in const &remoteSockAddr, system_clock::time_point const &now)
+void MiddleWare::processRxMessage(rgc::payload_t const &payload, struct sockaddr_in const &remoteSockAddr, system_clock::time_point const &now)
 {
     // Truncated frame, discard
     if (payload.size() < sizeof(peerId_t) + sizeof(seqNr_t) + sizeof(checksum_t))
     {
+        m_pApp->log(IApp::LOG_TYPE::WARN, "Discarding rx message: Truncated.");
         return;
     }
 
     // Checksum error, discard
     if (!verifyChecksum(reinterpret_cast<uint8_t const *>(payload.data()), payload.size()))
     {
+        m_pApp->log(IApp::LOG_TYPE::WARN, "Discarding rx message: Checksum error.");
         return;
     }
 
     peerId_t peerId = (payload[0] << 8) + payload[1];
     if (!isPeerSupported(peerId))
     {
+        m_pApp->log(IApp::LOG_TYPE::WARN, fmt::format("Discarding rx message: Unknown peer id: {}", peerId));
         return;
     }
 
@@ -160,9 +170,9 @@ void MiddleWare::processRxMessage(rgc::payload_t &payload, struct sockaddr_in co
     seqNr_t seqNr = (payload[2] << 8) + payload[3];
     if (!isAckFrame && !isSeqNrOfPeerAccepted(peerId, seqNr))
     {
+        m_pApp->log(IApp::LOG_TYPE::MSG, "Discarding rx message: Sequence Number.");
         return;
     }
-
 
     // FIXME: Check that message with msgId has not been delivered yet
 
@@ -188,11 +198,13 @@ void MiddleWare::processRxMessage(rgc::payload_t &payload, struct sockaddr_in co
             if (txState != nullptr)
             {
                 txState->setAcknowledged();
+                m_pApp->log(IApp::LOG_TYPE::MSG, "Received ACK for sent message.");
             }
         }
         else
         {
             // We have received that message already, ignore it here
+             m_pApp->log(IApp::LOG_TYPE::MSG, "Ignoring already received message.");
         }
     }
 }
@@ -232,6 +244,58 @@ void MiddleWare::setAcceptedSeqNrOfPeer(peerId_t peerId, seqNr_t seqNr)
     {
         it->nextSeqNr = seqNr;
     }
+}
+
+std::string MiddleWare::toString(struct sockaddr_in const &sockAddr)
+{
+    uint8_t const *pIP = reinterpret_cast<uint8_t const *>(&sockAddr.sin_addr.s_addr);
+    uint8_t const *pPort = reinterpret_cast<uint8_t const *>(&sockAddr.sin_port);
+    return fmt::format("{}.{}.{}.{}:{}", pIP[0], pIP[1], pIP[2], pIP[3], (pPort[0] << 8) + pPort[1]);
+}
+
+std::string MiddleWare::toString(rgc::payload_t const &payload)
+{
+    stringstream ss;
+
+    if (payload.size() > 4)
+    {
+        uint8_t const *pHeader = reinterpret_cast<uint8_t const *>(payload.data());
+        ss << fmt::format("({},{})", (pHeader[0] << 8) + pHeader[1], (pHeader[2] << 8) + pHeader[3]);
+    }
+
+    // We have got data
+    if (payload.size() > 4 + 2)
+    {
+        auto itStart = begin(payload) + 4;
+        auto itEnd = end(payload) - 2;
+
+        bool isPrintable = std::accumulate(itStart, itEnd, true, [](bool a, auto const &el) { return (a && (std::isprint(el))); });
+        ss << " - ";
+
+        if (isPrintable)
+        {
+            ss << "\"" << string(itStart, itEnd) << "\"";
+        }
+        else
+        {
+            stringstream ss;
+            size_t count = 0;
+           
+            for (auto it = itStart; it < itEnd; ++it)
+            {
+                ss << "0x" << std::setw(2) << std::hex << std::setfill('0') << static_cast<uint16_t>(*it);
+                ss << (it + 1 < itEnd) ? "," : "";
+                ss << ((++count) % 8 == 0) ? "\n" : " "; 
+            }
+        }
+    }
+
+    if (payload.size() >= 4 + 2)
+    {
+        uint8_t const *pCRC = reinterpret_cast<uint8_t const *>(&(payload.data()[payload.size() - 2]));
+        ss << " - (0x" << std::setw(4) << std::hex << std::setfill('0') << static_cast<uint16_t>((pCRC[0] << 8) + pCRC[1]) << ")";
+    }
+    return ss.str();
 }
 
 

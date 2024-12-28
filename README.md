@@ -15,7 +15,6 @@ ctest --output-on-failure
 ## ToDos
 
 * Filter out unknown remote IP/Port Numbers
-* Logger
 * Error Injection
 * Command Interface/Named Pipe
 * Send an ACK back to sending node instead of the same Data 
@@ -25,6 +24,10 @@ ctest --output-on-failure
 * Check if we lose incoming Udp Packets due to async Rx processing
 
 ## Open for Clarification
+
+### IP Standard
+
+Assume: Only use IPV4
 
 ### Udp Packet Format
 
