@@ -8,32 +8,174 @@ using namespace std;
 
 namespace rgc
 {
-    static payload_t mkPayload(MessageId msgId, string s)
+    static const peer_t PEER_1 = { 1, 42, inet_addr("192.168.1.1") };
+    static const peer_t PEER_2 = { 2, 43, inet_addr("192.168.1.2") };
+
+    static sender_payload_t mkRxPayload(peer_t const &sender, seqNr_t seqNr, string s = "")
     {
-        payload_t ret;
-        ret.reserve(s.length() + 4);
-        ret.push_back(msgId.getPeerId() >> 8 );
-        ret.push_back(msgId.getPeerId() & 0xff );
-        ret.push_back(msgId.getSeqNr() >> 8 );
-        ret.push_back(msgId.getSeqNr() & 0xff );
+        sender_payload_t ret;
+        ret.payload.reserve(s.length() + 4);
+        ret.payload.push_back(sender.peerId >> 8 );
+        ret.payload.push_back(sender.peerId & 0xff );
+        ret.payload.push_back(seqNr >> 8 );
+        ret.payload.push_back(seqNr & 0xff );
+        ret.payload.insert(end(ret.payload), begin(s), end(s));
+        checksum_t checksum = MiddleWare::rfc1071Checksum(reinterpret_cast<uint8_t const *>(ret.payload.data()), ret.payload.size());
+        ret.payload.push_back(checksum >> 8);
+        ret.payload.push_back(checksum & 0xff);
 
-        ret.insert(end(ret), begin(s), end(s));
-
+        ret.peer = sender;
         return ret;
     }
 
-    TEST_CASE( "DummyTest", "MiddleWare" )
+
+    class Peers
     {
-        TestTxSocket txSocket({ 1, 42, "192.168.1.1"});
-        vector<ITxSocket*> txSockets;
-        txSockets.push_back(&txSocket);
+    public:
+        Peers(std::vector<peer_t> peers) : 
+            txSocks(mkTxSocks(peers)),
+            rxSocket(),
+            txISocks(mkITxSocks(txSocks)),
+            app(&rxSocket, txISocks)
+        {}
+        
+        vector<TestTxSocket> txSocks;
         TestRxSocket rxSocket;
+        std::vector<ITxSocket*> txISocks;
+        TestApp app;
+    private:
 
-        rxSocket.m_receivedPayloads.push_back(mkPayload({ 1, 1} , "test"));
-        TestApp testApp(&rxSocket, txSockets, 10);
-        testApp.run();
+        static std::vector<TestTxSocket> mkTxSocks(std::vector<peer_t> peers)
+        {
+            std::vector<TestTxSocket> ret;
+            for (peer_t peer : peers)
+            {
+                ret.push_back(TestTxSocket(peer));
+            }
 
-        REQUIRE(txSocket.m_sentPayloads.size() == 1);
+            return ret;            
+        }
 
+        static std::vector<ITxSocket*> mkITxSocks(std::vector<TestTxSocket> &txSocks)
+        {
+            std::vector<ITxSocket*> ret;
+            for (auto &txSock : txSocks)
+            {
+                ret.push_back(&txSock);
+            }
+            return ret;
+        }
+    };
+
+    TEST_CASE( "Node does not send anything w/o prior receiving something", "MiddleWare" )
+    {
+        Peers p({PEER_1});
+        
+        // Simulate ten seconds run without receiving anything, our node shall send nothing
+        p.app.numLoops(100).run(); 
+        REQUIRE(p.txSocks[0].m_sentPayloads.empty());
+        REQUIRE(p.app.deliveredMsgs.empty());
+    }
+
+    TEST_CASE( "One Peer sending no ACK", "MiddleWare" )
+    {
+        // One peer
+        Peers p({PEER_1});
+
+        // Simulate reception from peer
+        p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_1, 1, "test"));
+        p.app.numLoops(1).run();
+        // Our node shall have sent the message back immediately
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 1);
+        p.app.numLoops(9).run();
+        // Our node shall wait for an ACK to arrive
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 1);
+        p.app.numLoops(1).run();
+        // No ACK arrived, our node repeats transmission
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 2);
+        p.app.numLoops(9).run();
+        // Our node shall wait for an ACK to arrive, no message delivered to app
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 2);
+        p.app.numLoops(1).run();
+        // No ACK arrived, our node repeats transmission
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 3);
+        p.app.numLoops(9).run();
+        // Our node shall wait for an ACK to arrive, no message delivered to app
+        REQUIRE(p.app.deliveredMsgs.empty());
+        p.app.numLoops(1).run();
+        REQUIRE(p.app.deliveredMsgs.size() == 1);
+        // Nothing more shall happen in our node
+        p.app.numLoops(100).run(); 
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 3); 
+        REQUIRE(p.app.deliveredMsgs.size() == 1);     
+    }
+
+    TEST_CASE( "Two Peers sending ACKs", "MiddleWare" )
+    {
+        // One peer
+        Peers p({PEER_1, PEER_2});
+        
+        // Simulate reception from peer
+        p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_1, 0, "test1"));
+        p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_2, 0, "test2"));
+        p.app.numLoops(1).run();
+        
+        // Our node shall have sent the messages back immediately
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 2);
+        REQUIRE(p.txSocks[1].m_sentPayloads.size() == 0); // That one gets sent a second later
+
+        // We receive the acks of our peers
+        // FIXME: Continue here
+    }
+
+
+    TEST_CASE( "One Peer sending ACKs immediately", "MiddleWare" )
+    {
+        // One peer
+        Peers p({PEER_1});
+        // Simulate reception from peer
+        p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_1, 1,"test"));
+        p.app.numLoops(1).run();
+        // Must have been sent immediately
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 1);
+        // Simulate ack reception
+        p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_1, 1));
+        p.app.numLoops(1).run();
+        // Message must have been delivered  
+        REQUIRE(p.app.deliveredMsgs.size() == 1);
+        p.app.numLoops(100).run();
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 1);
+        REQUIRE(p.app.deliveredMsgs.size() == 1);
+    }
+
+    TEST_CASE( "Unknown Peers message must be discarded", "MiddleWare" )
+    {
+        // One peer
+        Peers p({PEER_1});
+        p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_2, 1, "test"));
+        p.app.numLoops(100).run();
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 0);
+    }
+
+    TEST_CASE( "A SeqNr of the same Peer must not be delivered twice", "MiddleWare" )
+    {
+        // One peer
+        Peers p({PEER_1});
+        // Simulate reception from peer
+        p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_1, 1,"test"));
+        p.app.numLoops(1).run();
+        // Must have been sent immediately
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 1);
+        // Simulate ack reception
+        p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_1, 1));
+        p.app.numLoops(1).run();
+        // Message must have been delivered  
+        REQUIRE(p.app.deliveredMsgs.size() == 1);
+
+        // Same seq number received again, now it is discarded
+        p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_1, 1,"test"));
+        p.app.numLoops(100).run();
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 1);
+        REQUIRE(p.app.deliveredMsgs.size() == 1);
     }
 }
