@@ -14,13 +14,11 @@ ctest --output-on-failure
 
 ## ToDos
 
-* Filter out unknown remote IP/Port Numbers
 * Error Injection
 * Command Interface/Named Pipe
-* Send an ACK back to sending node instead of the same Data 
 * RFC 1071 CRC Implementation
-* Add sanitizers to debug build
-* Add stricter warnings to debug and release builds
+
+* Send an ACK back to sending node instead of the same Data 
 * Check if we lose incoming Udp Packets due to async Rx processing
 
 ## Open for Clarification

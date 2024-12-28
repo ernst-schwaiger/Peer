@@ -166,6 +166,7 @@ private:
     void processTxMessage(TxState &txState, payload_t const &msg, std::chrono::system_clock::time_point const &now);
     void processRxMessage(rgc::payload_t const &payload, struct sockaddr_in const &remoteSockAddr, std::chrono::system_clock::time_point const &now);
 
+    bool areRemoteIpUdpPortSupported(struct sockaddr_in const &remoteSockAddr) const;
     bool isPeerSupported(peerId_t peerId) const;
     bool isSeqNrOfPeerAccepted(peerId_t peerId, seqNr_t seqNr) const;
     void setAcceptedSeqNrOfPeer(peerId_t peerId, seqNr_t seqNr);

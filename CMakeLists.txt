@@ -28,6 +28,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+
 #
 # Peer binary
 #
@@ -38,6 +39,15 @@ add_executable(Peer
     src/MiddleWare.cpp
     src/UdpSocket.cpp
     )
+
+# Enable AddressSanitizer for Debug builds on clang or gcc only
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
+        set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
+    endif()
+endif()
 
 target_link_libraries(Peer PRIVATE fmt::fmt)
 

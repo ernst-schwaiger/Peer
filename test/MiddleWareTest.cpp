@@ -9,6 +9,9 @@ using namespace std;
 namespace rgc
 {
     static const peer_t PEER_1 = { 1, 42, inet_addr("192.168.1.1") };
+    static const peer_t PEER_1_incrrectPort = { 1, 41, inet_addr("192.168.1.1") };
+    static const peer_t PEER_1_incrrectIP = { 1, 42, inet_addr("192.168.1.101") };
+
     static const peer_t PEER_2 = { 2, 43, inet_addr("192.168.1.2") };
 
     static sender_payload_t mkRxPayload(peer_t const &sender, seqNr_t seqNr, string s = "")
@@ -153,6 +156,20 @@ namespace rgc
         // One peer
         Peers p({PEER_1});
         p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_2, 1, "test"));
+        p.app.numLoops(100).run();
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 0);
+    }
+
+    TEST_CASE( "Messages from unknown IP/Udp Port Number combinations must be discarded", "MiddleWare" )
+    {
+        // One peer
+        Peers p({PEER_1});
+
+        p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_1_incrrectPort, 1, "test"));
+        p.app.numLoops(100).run();
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 0);
+
+        p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_1_incrrectIP, 1, "test"));
         p.app.numLoops(100).run();
         REQUIRE(p.txSocks[0].m_sentPayloads.size() == 0);
     }

@@ -145,6 +145,12 @@ void MiddleWare::processTxMessage(TxState &txState, payload_t const &msg, system
 
 void MiddleWare::processRxMessage(rgc::payload_t const &payload, struct sockaddr_in const &remoteSockAddr, system_clock::time_point const &now)
 {
+    if (!areRemoteIpUdpPortSupported(remoteSockAddr))
+    {
+        m_pApp->log(IApp::LOG_TYPE::WARN, fmt::format("Discarding rx message from unknown IP/Port: {}.", toString(remoteSockAddr)));
+        return;
+    }
+
     // Truncated frame, discard
     if (payload.size() < sizeof(peerId_t) + sizeof(seqNr_t) + sizeof(checksum_t))
     {
@@ -216,6 +222,21 @@ bool MiddleWare::isPeerSupported(peerId_t peerId) const
     return (it != end(m_txSockets));
 }
 
+bool MiddleWare::areRemoteIpUdpPortSupported(struct sockaddr_in const &remoteSockAddr) const
+{
+    auto it = std::find_if(begin(m_txSockets), end(m_txSockets),
+        [&remoteSockAddr](auto const *txSocket)
+        {
+            struct ::sockaddr_in const &addr = txSocket->getRemoteSocketAddr();
+            return ( (remoteSockAddr.sin_addr.s_addr == addr.sin_addr.s_addr) &&
+                     (remoteSockAddr.sin_family == addr.sin_family) &&
+                     (remoteSockAddr.sin_port == addr.sin_port));
+        }
+    );
+
+    return (it != end(m_txSockets));
+}
+
 
 bool MiddleWare::isSeqNrOfPeerAccepted(peerId_t peerId, seqNr_t seqNr) const
 {
@@ -284,8 +305,8 @@ std::string MiddleWare::toString(rgc::payload_t const &payload)
             for (auto it = itStart; it < itEnd; ++it)
             {
                 ss << "0x" << std::setw(2) << std::hex << std::setfill('0') << static_cast<uint16_t>(*it);
-                ss << (it + 1 < itEnd) ? "," : "";
-                ss << ((++count) % 8 == 0) ? "\n" : " "; 
+                ss << ((it + 1 < itEnd) ? "," : "");
+                ss << (((++count) % 8 == 0) ? "\n" : " "); 
             }
         }
     }
