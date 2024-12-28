@@ -30,11 +30,15 @@ public:
         return m_remoteSockAddr;
     }
 
+    virtual peerId_t getPeerId() const
+    {
+        return m_peerId;
+    }
+
 private:
-    peer_t m_peer; // FIXME: remove if we dont need that
+    peerId_t m_peerId;
     int m_socketDesc;
     struct ::sockaddr_in m_remoteSockAddr;
 };
-
 
 } // namespace rgc

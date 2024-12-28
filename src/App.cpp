@@ -27,7 +27,8 @@ void App::run()
 {
     for (;;)
     {
-        m_middleWare.rxTxLoop();
+        auto now = std::chrono::system_clock::now();
+        m_middleWare.rxTxLoop(now);
         usleep(100000); // Sleep for 100 milliseconds
     }
 }

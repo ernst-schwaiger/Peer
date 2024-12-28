@@ -16,7 +16,6 @@ static constexpr uint16_t INVALID_PORT_NUM = UINT16_MAX;
 static constexpr peerId_t DEFAULT_PEER_ID = 42;
 static constexpr uint16_t DEFAULT_PORT_NUM = 4242;
 static constexpr char const * DEFAULT_CONFIG_FILE = "./peer.cfg";
-static constexpr char const * DEFAULT_LOG_FILE = "./peer.log";
 static constexpr char SEPARATOR_CONFIG_FILE = ',';
 static constexpr char COMMENT_TOKEN_CONFIG_FILE = '#';
 
@@ -34,7 +33,7 @@ static optional<peer_t> parseLine(string const &line)
 {
     optional<peer_t> ret;
     string field;
-    peer_t tmp = { INVALID_PEER_ID, INVALID_PORT_NUM, ""};
+    peer_t tmp = { INVALID_PEER_ID, INVALID_PORT_NUM, 0 };
 
     if ((line.size() > 0) && (line[0] != COMMENT_TOKEN_CONFIG_FILE))
     {
@@ -42,7 +41,8 @@ static optional<peer_t> parseLine(string const &line)
         stringstream ss(line);
         getline(ss, field, SEPARATOR_CONFIG_FILE);
         tmp.peerId = safeStrToI(field.c_str(), INVALID_PEER_ID);
-        getline(ss, tmp.peerIpAddress, SEPARATOR_CONFIG_FILE);
+        getline(ss, field, SEPARATOR_CONFIG_FILE);
+        tmp.peerIpAddress = inet_addr(field.c_str());
         getline(ss, field, SEPARATOR_CONFIG_FILE);
         tmp.peerUdpPort = safeStrToI(field.c_str(), INVALID_PORT_NUM);
         ret = tmp;
@@ -112,7 +112,7 @@ static vector<peer_t> readConfigFile(string const &configFilePath)
         optional<peer_t> optPeer = parseLine(line);
         if (optPeer.has_value() && isValid(*optPeer, ret))
         {
-            ret.emplace_back(*optPeer);
+            ret.push_back(*optPeer);
         }
     }
     
@@ -122,7 +122,7 @@ static vector<peer_t> readConfigFile(string const &configFilePath)
 std::optional<config_t> rgc::getConfigFromOptions(int argc, char *argv[])
 {
     optional<config_t> ret;
-    config_t parsed_values{ DEFAULT_PEER_ID, DEFAULT_PORT_NUM, DEFAULT_LOG_FILE, {} };
+    config_t parsed_values{ DEFAULT_PEER_ID, DEFAULT_PORT_NUM, nullptr, {} };
     bool error = false;   
     char c;
     string configFile = DEFAULT_CONFIG_FILE;
@@ -219,6 +219,6 @@ void rgc::printUsage(char *argv0)
     cerr << "   <peerId>        unique numerical id in the range [0.." << INVALID_PEER_ID - 1 << "], default is " << DEFAULT_PEER_ID <<".\n";
     cerr << "   <udpPort>       numerical id in the range [1025.." << INVALID_PORT_NUM - 1 << "], default is " << DEFAULT_PORT_NUM << ".\n";
     cerr << "   <configFile>    path to an already existing configuration file, default is " << DEFAULT_CONFIG_FILE << ".\n";
-    cerr << "   <logFile>       path to log file, default is " << DEFAULT_LOG_FILE << ".\n";
+    cerr << "   <logFile>       path to log file, default is stdout/stderr.\n";
 }
 

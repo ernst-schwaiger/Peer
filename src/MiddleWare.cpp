@@ -1,85 +1,91 @@
-#include <iostream>
-#include <string>
-#include <algorithm>
 #include <numeric>
-#include <cstring>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <fcntl.h>
 
 #include "MiddleWare.h"
 
 using namespace std;
 using namespace rgc;
+using namespace std::chrono;
 
-static constexpr std::chrono::duration<int64_t, std::milli> ACK_TIMEOUT = std::chrono::milliseconds(1000);
+static constexpr duration<int64_t, std::milli> ACK_TIMEOUT = milliseconds(1000);
+constexpr duration<int64_t, std::milli> TX_CLIENT_DELAY = std::chrono::milliseconds(1000);
 
-// void MiddleWare::doSend()
-// {
-//     cout << "Sending Udp Packet\n";
-
-//     int sockfd;
-//     struct sockaddr_in server_addr;
-//     char const *message = "Hello, UDP!";
-
-//     // Create a socket
-//     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-//         perror("socket creation failed");
-//         exit(EXIT_FAILURE);
-//     }
-
-//     // Define the server address
-//     memset(&server_addr, 0, sizeof(server_addr));
-//     server_addr.sin_family = AF_INET;
-//     server_addr.sin_port = htons(12345);
-//     server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-
-//     // Send the message
-//     if (sendto(sockfd, message, strlen(message), 0, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-//         perror("sendto failed");
-//         close(sockfd);
-//         exit(EXIT_FAILURE);
-//     }
-
-//     cout << "Message sent.\n";
-
-//     // Close the socket
-//     close(sockfd);
-// }
-
-
-void MiddleWare::rxTxLoop()
+void MiddleWare::rxTxLoop(system_clock::time_point const &now)
 {
-    listenRxSocket();
-    checkPendingTxMessages();
-    checkPendingCommands();
+    listenRxSocket(now);
+    checkPendingTxMessages(now);
+    checkPendingCommands(now);
 }
 
-void MiddleWare::listenRxSocket()
+void MiddleWare::listenRxSocket(system_clock::time_point const &now)
 {
     rx_buffer_t buf;
     struct sockaddr_in remoteSockAddr;
     
-    // Polling for incoming data...
-    rgc::TransmitStatus status = m_pRxSocket->receive(buf, remoteSockAddr);
+    // Polling for incoming data until there is nothing left to receive or an error happens 
+    for (;;)
+    {
+        rgc::TransmitStatus status = m_pRxSocket->receive(buf, remoteSockAddr);
 
-    if (status.status != 0)
-    {
-        // FIXME error handling
-    }
-    else
-    {
-        if (status.transmitBytes > 0)
+        if (status.status != 0)
         {
-            payload_t payload(&buf[0], &buf[status.transmitBytes]);
-            processRxMessage(payload, remoteSockAddr);
+            // FIXME error handling
+        }
+        else
+        {
+            if (status.transmitBytes > 0)
+            {
+                payload_t payload(&buf[0], &buf[status.transmitBytes]);
+                injectError(payload);
+                processRxMessage(payload, remoteSockAddr, now);
+            }
+        }
+
+        if ((status.transmitBytes == 0) || (status.status != 0))
+        {
+            break;
         }
     }
 }
 
-void MiddleWare::checkPendingTxMessages()
+void MiddleWare::injectError(rgc::payload_t &payload) const
 {
-    auto now = std::chrono::system_clock::now();
+    // FIXME: Implement this
+}
+
+void MiddleWare::checkPendingTxMessages(system_clock::time_point const &now)
+{
+    auto itBefore = m_txMessageStates.before_begin();
+    for (auto it = begin(m_txMessageStates); it != end(m_txMessageStates); ++it)
+    {
+        auto &txMsgState = *it;
+
+        vector<TxState> &txStates = txMsgState.getTxStates();
+        for (auto &txState : txStates)
+        {
+            if (!txState.isAcknowledged() && txState.isTimeoutElapsed(now))
+            {
+                processTxMessage(txState, txMsgState.getPayload(), now);
+            }
+        }
+
+        bool allAck = accumulate(begin(txStates), end(txStates), true, 
+            [](bool acc, auto &e)
+            {
+                return (acc && e.isAcknowledged());
+            });
+
+        if (allAck)
+        {
+            // Deliver message to app
+            m_pApp->deliverMessage(txMsgState.getMsgId(), txMsgState.getPayload());
+            // Dispose of this element
+            m_txMessageStates.erase_after(itBefore);
+            // Step back to previous element, ours is invalid now
+            it = itBefore;
+        }
+
+        itBefore = it;
+    }
 
     for (auto &txMsgState : m_txMessageStates)
     {
@@ -107,12 +113,12 @@ void MiddleWare::checkPendingTxMessages()
     }
 }
 
-void MiddleWare::checkPendingCommands()
+void MiddleWare::checkPendingCommands(system_clock::time_point const &now)
 {
     // FIXME: Implement this
 }
 
-void MiddleWare::processTxMessage(TxState &txState, vector<char> const &msg, std::chrono::system_clock::time_point const &now)
+void MiddleWare::processTxMessage(TxState &txState, vector<char> const &msg, system_clock::time_point const &now)
 {
     uint8_t remainingTxAttempts = txState.getRemainingTxAttempts();
     if (remainingTxAttempts == 0)
@@ -124,55 +130,120 @@ void MiddleWare::processTxMessage(TxState &txState, vector<char> const &msg, std
     else
     {
         txState.getSocket()->send(msg);
-        std::chrono::system_clock::time_point timeout = now + ACK_TIMEOUT;
+        system_clock::time_point timeout = now + ACK_TIMEOUT;
         txState.setTimeout(timeout);
         txState.setRemainingTxAttempts(remainingTxAttempts - 1);
     }
 }
 
-void MiddleWare::processRxMessage(rgc::payload_t &payload, struct sockaddr_in const &remoteSockAddr)
+void MiddleWare::processRxMessage(rgc::payload_t &payload, struct sockaddr_in const &remoteSockAddr, system_clock::time_point const &now)
 {
-    // FIXME: Add CRC field
-    if (payload.size() < sizeof(peerId_t) + sizeof(seqNr_t))
+    // Truncated frame, discard
+    if (payload.size() < sizeof(peerId_t) + sizeof(seqNr_t) + sizeof(checksum_t))
     {
-        // truncated frame, ignore
+        return;
+    }
+
+    // Checksum error, discard
+    if (!verifyChecksum(reinterpret_cast<uint8_t const *>(payload.data()), payload.size()))
+    {
+        return;
+    }
+
+    peerId_t peerId = (payload[0] << 8) + payload[1];
+    if (!isPeerSupported(peerId))
+    {
+        return;
+    }
+
+    bool isAckFrame = (payload.size() == sizeof(peerId_t) + sizeof(seqNr_t) + sizeof(checksum_t));
+    seqNr_t seqNr = (payload[2] << 8) + payload[3];
+    if (!isAckFrame && !isSeqNrOfPeerAccepted(peerId, seqNr))
+    {
+        return;
+    }
+
+
+    // FIXME: Check that message with msgId has not been delivered yet
+
+    MessageId msgId = MessageId(peerId, seqNr);
+    TxMessageState *txMsgState = findTxMsgState(msgId);
+
+    if (txMsgState == nullptr)
+    {
+        if (!isAckFrame)
+        {
+            // No such message found in the state, set up anew
+            // FIXME: Transmission of ACK back to sender is missing.
+            m_txMessageStates.emplace_front(msgId, m_txSockets, payload, now);
+            setAcceptedSeqNrOfPeer(peerId, seqNr + 1);
+        }
     }
     else
     {
-        bool isAckFrame = (payload.size() == sizeof(peerId_t) + sizeof(seqNr_t));
-        peerId_t peerId = (payload[0] << 8) + payload[1];
-        seqNr_t seqNr = (payload[2] << 8) + payload[3];
-
-        // FIXME: Check for valid peer id
-        // FIXME: Check that message with msgId has not been delivered yet
-        // FIXME: Error injection
-
-        MessageId msgId = MessageId(peerId, seqNr);
-        TxMessageState *txMsgState = findTxMsgState(msgId);
-
-        if (txMsgState == nullptr)
+        // Message found, check content
+        if (isAckFrame)
         {
-            if (!isAckFrame)
+            TxState *txState = txMsgState->findTxState(remoteSockAddr);
+            if (txState != nullptr)
             {
-                // No such message found in the state, set up anew
-                m_txMessageStates.emplace_back(TxMessageState(msgId, m_txSockets, payload));
+                txState->setAcknowledged();
             }
         }
         else
         {
-            // Message found, check content
-            if (isAckFrame)
-            {
-                TxState *txState = txMsgState->findTxState(remoteSockAddr);
-                if (txState != nullptr)
-                {
-                    txState->setAcknowledged();
-                }
-            }
-            else
-            {
-                // We have received that message already, ignore it here
-            }
+            // We have received that message already, ignore it here
         }
     }
+}
+
+bool MiddleWare::isPeerSupported(peerId_t peerId) const
+{
+    auto it = std::find_if(begin(m_txSockets), end(m_txSockets),
+        [&peerId](auto const &txSocket) { return (txSocket->getPeerId() == peerId); });
+    return (it != end(m_txSockets));
+}
+
+
+bool MiddleWare::isSeqNrOfPeerAccepted(peerId_t peerId, seqNr_t seqNr) const
+{
+    bool ret = false;
+    auto it = std::find_if(begin(m_nextSeqNrs), end(m_nextSeqNrs),
+        [&peerId](auto const &nsn) { return (nsn.peerId == peerId); });
+
+    if (it != end(m_nextSeqNrs))
+    {
+        auto diff = (it->nextSeqNr <= seqNr) ?
+            seqNr - it->nextSeqNr : 
+            seqNr + (1 << (sizeof(seqNr_t) * 8)) - it->nextSeqNr;
+
+        ret = (diff < 10);
+    }
+
+    return ret;
+}
+
+void MiddleWare::setAcceptedSeqNrOfPeer(peerId_t peerId, seqNr_t seqNr)
+{
+    auto it = std::find_if(begin(m_nextSeqNrs), end(m_nextSeqNrs),
+        [&peerId](auto const &nsn) { return (nsn.peerId == peerId); });
+
+    if (it != end(m_nextSeqNrs))
+    {
+        it->nextSeqNr = seqNr;
+    }
+}
+
+
+bool MiddleWare::verifyChecksum(uint8_t const *pl, size_t size)
+{
+    checksum_t checksum = (pl[size - 2] << 8) + pl[size - 1];
+    checksum_t calcChecksum = rfc1071Checksum(pl, size);
+    return (calcChecksum == checksum);
+}
+
+checksum_t MiddleWare::rfc1071Checksum(uint8_t const *pl, size_t size)
+{
+    // FIXME: Implement this
+    return 0xaffe;
 }

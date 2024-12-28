@@ -57,13 +57,13 @@ TransmitStatus UdpRxSocket::receive(rx_buffer_t &buf, struct sockaddr_in &remote
 }
 
 
-UdpTxSocket::UdpTxSocket(peer_t const &peer) : m_peer(peer)
+UdpTxSocket::UdpTxSocket(peer_t const &peer) : m_peerId(peer.peerId)
 {
     std::memset(&m_remoteSockAddr, 0, sizeof(m_remoteSockAddr));
     // FIXME: Only IP V4?
     m_remoteSockAddr.sin_family = AF_INET;
-    m_remoteSockAddr.sin_addr.s_addr = inet_addr(m_peer.peerIpAddress.c_str());
-    m_remoteSockAddr.sin_port = htons(m_peer.peerUdpPort);
+    m_remoteSockAddr.sin_addr.s_addr = peer.peerIpAddress;
+    m_remoteSockAddr.sin_port = htons(peer.peerUdpPort);
     // FIXME: Throw if we don't get a valid descriptor
     m_socketDesc = socket(AF_INET, SOCK_DGRAM, 0);
 }

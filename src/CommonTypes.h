@@ -4,17 +4,20 @@
 #include <string>
 #include <cstdint>
 
+#include <arpa/inet.h>
+
 namespace rgc
 {
 
 typedef uint16_t peerId_t;
 typedef uint16_t seqNr_t;
+typedef uint16_t checksum_t;
 
 typedef struct
 {
     peerId_t peerId;
     uint16_t peerUdpPort;
-    std::string peerIpAddress;
+    in_addr_t peerIpAddress; // IP V4 address as uint32 in network byte order
 } peer_t;
 
 // Identifies a message originally sent from a specific peer 

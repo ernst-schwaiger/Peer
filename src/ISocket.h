@@ -30,6 +30,7 @@ class ITxSocket
 {
 public:
     virtual ~ITxSocket() {};
+    virtual peerId_t getPeerId() const = 0;
     virtual TransmitStatus send(payload_t const &payload) const = 0;
     virtual struct ::sockaddr_in const &getRemoteSocketAddr() const = 0;
 };
