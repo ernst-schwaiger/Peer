@@ -30,7 +30,6 @@ UdpRxSocket::UdpRxSocket(string const &localIp, uint16_t localPort)
 
 UdpRxSocket::~UdpRxSocket()
 {
-    cout << "Closing tx socket.\n";
     close(m_socketDesc);
 }
 
@@ -70,7 +69,6 @@ UdpTxSocket::UdpTxSocket(peer_t const &peer) : m_peerId(peer.peerId)
 
 UdpTxSocket::~UdpTxSocket()
 {
-    cout << "Closing tx socket.\n";
     close(m_socketDesc);
 }
 

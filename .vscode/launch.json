@@ -12,9 +12,9 @@
             "type": "cppdbg",
             "request": "launch",
 
-            "program": "${workspaceFolder}/build/peer",
+            "program": "${workspaceFolder}/build/Peer",
             //"args": ["-i", "10",  "-p", "2048", "-l", "./peer.log", "-c", "./peer.cfg", "-e", "123:456"],
-            "args": ["-c", "peer.cfg"],
+            "args": ["-i", "10", "first", "second"],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
             "environment": [],

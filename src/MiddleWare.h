@@ -162,7 +162,6 @@ private:
 
     void listenRxSocket(std::chrono::system_clock::time_point const &now);
     void checkPendingTxMessages(std::chrono::system_clock::time_point const &now);
-    void checkPendingCommands(std::chrono::system_clock::time_point const &now);
     void processTxMessage(TxState &txState, payload_t const &msg, std::chrono::system_clock::time_point const &now);
     void processRxMessage(rgc::payload_t const &payload, struct sockaddr_in const &remoteSockAddr, std::chrono::system_clock::time_point const &now);
     void processRxAckMessage(rgc::payload_t const &payload, peerId_t peerId, struct sockaddr_in const &remoteSockAddr);

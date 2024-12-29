@@ -16,6 +16,7 @@ typedef struct
     std::string logFile;
     std::string errorInjection;
     std::vector<peer_t> peers;
+    std::vector<std::string> freeParams;
 } config_t;
 
 extern std::optional<config_t> getConfigFromOptions(int argc, char *argv[]);

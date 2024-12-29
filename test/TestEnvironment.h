@@ -145,6 +145,12 @@ public:
         }
     }
 
+    virtual std::string getUserCommand()
+    {
+        // FIXME
+        return "";
+    }
+
     mutable std::vector<msgId_payload_t> deliveredMsgs;
 
 private:

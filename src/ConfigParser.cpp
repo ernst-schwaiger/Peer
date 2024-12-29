@@ -122,7 +122,7 @@ static vector<peer_t> readConfigFile(string const &configFilePath)
 std::optional<config_t> rgc::getConfigFromOptions(int argc, char *argv[])
 {
     optional<config_t> ret;
-    config_t parsed_values{ DEFAULT_PEER_ID, DEFAULT_PORT_NUM, "", {} };
+    config_t parsed_values{ DEFAULT_PEER_ID, DEFAULT_PORT_NUM, "", {}, {} };
     bool error = false;   
     char c;
     string configFile = DEFAULT_CONFIG_FILE;
@@ -167,6 +167,12 @@ std::optional<config_t> rgc::getConfigFromOptions(int argc, char *argv[])
             cerr << "Unexpected error parsing command line arguments.\n";
             abort();
         }
+    }
+
+    // Additional parameters without 
+    for (int i = optind; i < argc; i++)
+    { 
+        parsed_values.freeParams.push_back(argv[i]);
     }
 
     // parsing of parameters worked, check value ranges

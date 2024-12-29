@@ -15,7 +15,6 @@ void MiddleWare::rxTxLoop(system_clock::time_point const &now)
 {
     listenRxSocket(now);
     checkPendingTxMessages(now);
-    checkPendingCommands(now);
 }
 
 void MiddleWare::listenRxSocket(system_clock::time_point const &now)
@@ -113,11 +112,6 @@ void MiddleWare::checkPendingTxMessages(system_clock::time_point const &now)
             // FIXME: Dispose of this element
         }
     }
-}
-
-void MiddleWare::checkPendingCommands(system_clock::time_point const &now)
-{
-    // FIXME: Implement this
 }
 
 void MiddleWare::processTxMessage(TxState &txState, payload_t const &msg, system_clock::time_point const &now)
