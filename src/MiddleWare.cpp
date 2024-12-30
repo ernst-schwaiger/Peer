@@ -87,31 +87,6 @@ void MiddleWare::checkPendingTxMessages(system_clock::time_point const &now)
 
         itBefore = it;
     }
-
-    for (auto &txMsgState : m_txMessageStates)
-    {
-        vector<TxState> &txStates = txMsgState.getTxStates();
-        for (auto &txState : txStates)
-        {
-            if (!txState.isAcknowledged() && txState.isTimeoutElapsed(now))
-            {
-                processTxMessage(txState, txMsgState.getPayload(), now);
-            }
-        }
-
-        bool allAck = accumulate(begin(txStates), end(txStates), true, 
-            [](bool acc, auto &e)
-            {
-                return (acc && e.isAcknowledged());
-            });
-
-        if (allAck)
-        {
-            m_pApp->deliverMessage(txMsgState.getMsgId(), txMsgState.getPayload());
-            // FIXME: Deliver message
-            // FIXME: Dispose of this element
-        }
-    }
 }
 
 void MiddleWare::processTxMessage(TxState &txState, payload_t const &msg, system_clock::time_point const &now)

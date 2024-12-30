@@ -80,6 +80,70 @@ namespace rgc
         REQUIRE(p.app.deliveredMsgs.empty());
     }
 
+    TEST_CASE( "Node shall ignore a truncated message", "MiddleWare" )
+    {
+        Peers p({PEER_1});
+        
+        sender_payload_t truncated;
+        truncated.payload.push_back(0x00);
+        truncated.payload.push_back(0x01);
+        truncated.payload.push_back(0x00);
+        truncated.payload.push_back(0x01);
+        truncated.payload.push_back(0x02);
+        truncated.peer = PEER_1;
+
+        // receiving this truncated message shall be ignored by the middleware
+        p.rxSocket.m_receivedPayloads.push_back(truncated);
+        p.app.numLoops(100).run(); 
+        REQUIRE(p.txSocks[0].m_sentPayloads.empty());
+        REQUIRE(p.app.deliveredMsgs.empty());
+    }
+
+    TEST_CASE( "Node shall ignore a message with incorrect CRC", "MiddleWare" )
+    {
+        Peers p({PEER_1});
+        
+        sender_payload_t incorrectCRC;
+        incorrectCRC.payload.push_back(0x00);
+        incorrectCRC.payload.push_back(0x01);
+        incorrectCRC.payload.push_back(0x00);
+        incorrectCRC.payload.push_back(0x01);
+        // incorrect CRC
+        incorrectCRC.payload.push_back(0xca);
+        incorrectCRC.payload.push_back(0xfe);
+
+        incorrectCRC.peer = PEER_1;
+
+        // receiving this message with incorrect CRC shall be ignored by the middleware
+        p.rxSocket.m_receivedPayloads.push_back(incorrectCRC);
+        p.app.numLoops(100).run(); 
+        REQUIRE(p.txSocks[0].m_sentPayloads.empty());
+        REQUIRE(p.app.deliveredMsgs.empty());
+    }
+
+    TEST_CASE( "Node shall ignore a message with an uknown Peer Id", "MiddleWare" )
+    {
+        Peers p({PEER_1});
+        
+        sender_payload_t unknownPeer;
+        // Incorrect Peer Id in the header
+        unknownPeer.payload.push_back(0x01);
+        unknownPeer.payload.push_back(0xfe);
+        unknownPeer.payload.push_back(0x00);
+        unknownPeer.payload.push_back(0x01);
+        unknownPeer.payload.push_back(0xaf);
+        unknownPeer.payload.push_back(0xfe);
+
+        unknownPeer.peer = PEER_1;
+
+        // receiving this message with incorrect CRC shall be ignored by the middleware
+        p.rxSocket.m_receivedPayloads.push_back(unknownPeer);
+        p.app.numLoops(100).run(); 
+        REQUIRE(p.txSocks[0].m_sentPayloads.empty());
+        REQUIRE(p.app.deliveredMsgs.empty());
+    }    
+
+
     TEST_CASE( "One Peer sending no ACK", "MiddleWare" )
     {
         // One peer
@@ -110,7 +174,7 @@ namespace rgc
         // Nothing more shall happen in our node
         p.app.numLoops(100).run(); 
         REQUIRE(p.txSocks[0].m_sentPayloads.size() == 4); 
-        REQUIRE(p.app.deliveredMsgs.size() == 1);     
+        REQUIRE(p.app.deliveredMsgs.size() == 1);
     }
 
     TEST_CASE( "Two Peers sending ACKs", "MiddleWare" )
