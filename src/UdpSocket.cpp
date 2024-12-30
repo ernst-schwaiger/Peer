@@ -24,7 +24,12 @@ UdpRxSocket::UdpRxSocket(string const &localIp, uint16_t localPort)
     fcntl(m_socketDesc, F_SETFL, flags | O_NONBLOCK);
     memset(&m_localSockAddr, 0, sizeof(m_localSockAddr)); 
     m_localSockAddr.sin_family = AF_INET; 
-    m_localSockAddr.sin_addr.s_addr = INADDR_ANY; 
+
+    if (inet_aton(localIp.c_str(), &m_localSockAddr.sin_addr) < 0)
+    {
+        throw std::runtime_error(fmt::format("Invalid local Ip Address: {}.", localIp));
+    }
+
     m_localSockAddr.sin_port = htons(localPort);
 
     // Bind the socket to the specified port 
@@ -62,22 +67,16 @@ TransmitStatus UdpRxSocket::receive(rx_buffer_t &buf, struct sockaddr_in &remote
 }
 
 
-UdpTxSocket::UdpTxSocket(peer_t const &peer) : m_peerId(peer.peerId)
+UdpTxSocket::UdpTxSocket(peer_t const &peer, int socketDesc) : m_peerId(peer.peerId), m_socketDesc(socketDesc)
 {
     std::memset(&m_remoteSockAddr, 0, sizeof(m_remoteSockAddr));
     m_remoteSockAddr.sin_family = AF_INET;
     m_remoteSockAddr.sin_addr.s_addr = peer.peerIpAddress;
     m_remoteSockAddr.sin_port = htons(peer.peerUdpPort);
-    m_socketDesc = socket(AF_INET, SOCK_DGRAM, 0);
-    if (m_socketDesc < 0)
-    {
-        throw std::runtime_error(fmt::format("Could not create Udp Tx socket for peer {}", peer.peerId));
-    }    
 }
 
 UdpTxSocket::~UdpTxSocket()
 {
-    close(m_socketDesc);
 }
 
 TransmitStatus UdpTxSocket::send(payload_t const &payload) const

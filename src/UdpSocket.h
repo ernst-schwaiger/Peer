@@ -12,6 +12,11 @@ public:
     virtual ~UdpRxSocket();
     virtual TransmitStatus receive(rx_buffer_t &buf, struct sockaddr_in &remoteAddr) const;
 
+    int getSocketDescriptor() const
+    {
+        return m_socketDesc;
+    }
+
 private:
     int m_socketDesc;
     struct ::sockaddr_in m_localSockAddr;
@@ -21,7 +26,7 @@ private:
 class UdpTxSocket : public ITxSocket
 {
 public:
-    UdpTxSocket(peer_t const &peer);
+    UdpTxSocket(peer_t const &peer, int socketDesc);
     virtual ~UdpTxSocket();
     virtual TransmitStatus send(payload_t const &payload) const;
 
