@@ -23,7 +23,7 @@ namespace rgc
 
 App::App(peerId_t ownPeerId, IRxSocket *pRxSocket, vector<ITxSocket *> &txSockets, std::string const &logFile, string const &pipe_path) :
     m_middleWare(this, ownPeerId, pRxSocket, txSockets),
-    m_logger(logFile),
+    m_logger(Logger::makeLogger(logFile)),
     m_pipe_path(pipe_path),
     m_stop(false)
 {
@@ -60,6 +60,7 @@ void App::run()
     for (;;)
     {
         auto now = std::chrono::system_clock::now();
+
         m_middleWare.rxTxLoop(now);
         processPendingUserCommands();
 

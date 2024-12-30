@@ -54,6 +54,11 @@ public:
         log(m_out, msg, now, BLUE);
     }
 
+    static Logger makeLogger(std::string const &logFile)
+    {
+        return (logFile.empty()) ? Logger() : Logger(logFile);
+    }
+
 private:
 
     void log(std::ostream &stream, std::string const &msg, std::chrono::system_clock::time_point const &now, std::string color) const
