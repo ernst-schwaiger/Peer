@@ -79,7 +79,7 @@ private:
 class TxMessageState final
 {
 public:
-    TxMessageState(MessageId msgId, std::vector<ITxSocket *> txSockets, rgc::payload_t const &payload, std::chrono::system_clock::time_point now) :
+    TxMessageState(MessageId msgId, std::vector<ITxSocket *> const &txSockets, rgc::payload_t const &payload, std::chrono::system_clock::time_point now) :
         m_msgId(msgId),
         m_payload(payload)
     {

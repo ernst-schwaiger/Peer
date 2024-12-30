@@ -174,8 +174,12 @@ void MiddleWare::processRxAckMessage(rgc::payload_t const &payload, peerId_t pee
 
 void MiddleWare::processRxDataMessage(rgc::payload_t const &payload, peerId_t peerId, ITxSocket *txSocket, system_clock::time_point const &now)
 {
+    // Send back an ACK in any case, even if we already delivered that message to the app
+    txSocket->send(makeAckMessage(payload));
+
     seqNr_t seqNr = (payload[2] << 8) + payload[3];
     struct sockaddr_in const &remoteSockAddr = txSocket->getRemoteSocketAddr();
+
     if (!isSeqNrOfPeerAccepted(peerId, seqNr))
     {
         m_pApp->log(IApp::LOG_TYPE::WARN, fmt::format("Discarding message due to SeqNr: {} from {}.", toString(payload), toString(remoteSockAddr)));
@@ -188,9 +192,6 @@ void MiddleWare::processRxDataMessage(rgc::payload_t const &payload, peerId_t pe
     if (txMsgState == nullptr)
     {
         // No such message found in the state, set up anew
-        // Transmission of ACK back to sender done here immediately
-        txSocket->send(makeAckMessage(payload));
-
         m_pApp->log(IApp::LOG_TYPE::MSG, fmt::format("Received data message {} from {}.", toString(payload), toString(remoteSockAddr)));
         m_txMessageStates.emplace_front(msgId, m_txSockets, payload, now);
         setAcceptedSeqNrOfPeer(peerId, seqNr + 1);

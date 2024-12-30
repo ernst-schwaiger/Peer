@@ -13,6 +13,7 @@ namespace rgc
     static const peer_t PEER_1_incrrectIP = { 1, 42, inet_addr("192.168.1.101") };
 
     static const peer_t PEER_2 = { 2, 43, inet_addr("192.168.1.2") };
+    static const peer_t PEER_3 = { 3, 44, inet_addr("192.168.1.3") };
 
     static sender_payload_t mkRxPayload(peer_t const &sender, seqNr_t seqNr, string s = "")
     {
@@ -30,6 +31,24 @@ namespace rgc
         ret.peer = sender;
         return ret;
     }
+
+    static sender_payload_t mkRxResendPayload(peer_t const &sender, peer_t const &originator, seqNr_t seqNr, string s = "")
+    {
+        sender_payload_t ret;
+        ret.payload.reserve(s.length() + 4);
+        ret.payload.push_back(originator.peerId >> 8 );
+        ret.payload.push_back(originator.peerId & 0xff );
+        ret.payload.push_back(seqNr >> 8 );
+        ret.payload.push_back(seqNr & 0xff );
+        ret.payload.insert(end(ret.payload), begin(s), end(s));
+        checksum_t checksum = MiddleWare::rfc1071Checksum(ret.payload.data(), ret.payload.size());
+        ret.payload.push_back(checksum >> 8);
+        ret.payload.push_back(checksum & 0xff);
+
+        ret.peer = sender;
+        return ret;
+    }
+
 
 
     class Peers
@@ -164,10 +183,10 @@ namespace rgc
 
         binaryData.peer = PEER_1;
 
-        // receiving this message with incorrect CRC shall be ignored by the middleware
+        // receiving this message with binary datas
         p.rxSocket.m_receivedPayloads.push_back(binaryData);
         p.app.numLoops(1).run();
-        // ACK and resend to PEER_1
+        // ACK and immediate retransmission
         REQUIRE(p.txSocks[0].m_sentPayloads.size() == 2);
     }    
 
@@ -180,7 +199,7 @@ namespace rgc
         // Simulate reception from peer
         p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_1, 1, "test"));
         p.app.numLoops(1).run();
-        // Our node shall have sent the ack and also the message back immediately
+        // Our node shall have sent the ack and the retransmit
         REQUIRE(p.txSocks[0].m_sentPayloads.size() == 2);
         p.app.numLoops(9).run();
         // Our node shall wait for an ACK to arrive
@@ -205,22 +224,43 @@ namespace rgc
         REQUIRE(p.app.deliveredMsgs.size() == 1);
     }
 
-    TEST_CASE( "Two Peers sending ACKs", "MiddleWare" )
+    TEST_CASE( "Three Peers sending ACKs", "MiddleWare" )
     {
         // One peer
-        Peers p({PEER_1, PEER_2});
+        Peers p({PEER_1, PEER_2, PEER_3});
         
-        // Simulate reception from peer
+        // Simulate reception from peer 1
         p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_1, 0, "test1"));
-        p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_2, 0, "test2"));
         p.app.numLoops(1).run();
         
         // Our node shall have sent the messages back immediately
-        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 3); // Ack plus resend to two peers
-        REQUIRE(p.txSocks[1].m_sentPayloads.size() == 1); // Ack only, resend happens a sec later
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 2); // One Ack and one retransmit sent to peer 1
+        REQUIRE(p.txSocks[1].m_sentPayloads.size() == 0); // Resend to Peer 2 immediately
+        REQUIRE(p.txSocks[2].m_sentPayloads.size() == 0); // Resend is deferred by one second
 
-        // We receive the acks of our peers
-        // FIXME: Continue here
+        // We receive the ack from Peer 1...
+        p.rxSocket.m_receivedPayloads.push_back(mkRxResendPayload(PEER_1, PEER_1, 0));
+        // ... and wait until... 
+        p.app.numLoops(9).run();
+        REQUIRE(p.txSocks[1].m_sentPayloads.size() == 0);
+        // ... our Peer resends to Peer 2
+        p.app.numLoops(1).run();
+        REQUIRE(p.txSocks[1].m_sentPayloads.size() == 1);
+        // We then receive the ack from Peer 2...
+        p.rxSocket.m_receivedPayloads.push_back(mkRxResendPayload(PEER_2, PEER_1, 0));
+
+        // ... and wait until... 
+        p.app.numLoops(9).run();
+        REQUIRE(p.txSocks[2].m_sentPayloads.size() == 0);
+        // ... our Peer resends to Peer 3
+        p.app.numLoops(1).run();
+        REQUIRE(p.txSocks[2].m_sentPayloads.size() == 1);
+        // We then receive the ack from Peer 3...
+        p.rxSocket.m_receivedPayloads.push_back(mkRxResendPayload(PEER_3, PEER_1, 0));
+        REQUIRE(p.app.deliveredMsgs.size() == 0);
+        p.app.numLoops(1).run();
+        // ... which will trigger the delivery of the message to our app layer
+        REQUIRE(p.app.deliveredMsgs.size() == 1);
     }
 
 
@@ -281,10 +321,12 @@ namespace rgc
         // Message must have been delivered  
         REQUIRE(p.app.deliveredMsgs.size() == 1);
 
-        // Same seq number received again, now it is discarded
+        // Same seq number received again, now we send back an ACK, but we discard it
         p.rxSocket.m_receivedPayloads.push_back(mkRxPayload(PEER_1, 1,"test"));
+        p.app.numLoops(1).run();
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 3);
         p.app.numLoops(100).run();
-        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 2);
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 3);
         REQUIRE(p.app.deliveredMsgs.size() == 1);
     }
 }
