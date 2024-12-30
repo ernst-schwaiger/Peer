@@ -55,7 +55,7 @@ generates a `Peer/debug/coverage.html` indicating covered/not covered parts of t
 * Command Interface/Named Pipe
 * RFC 1071 CRC Implementation
 * Send every message to "ourselves"
-* For Message Id/CRC calculation in payload use uint8_t* instead of char*
+* Resolve FIXMEs
 * Check if we lose incoming Udp Packets due to async Rx processing
 
 ## Open for Clarification
@@ -73,6 +73,8 @@ Message Datagram:
 * 2 Bytes Sequence Number (Network Byte Order)
 * 1..n Bytes Message
 * 2 Bytes RFC 1071 (Network Byte Order)
+
+Message contains arbitrary binary data. If message represents a printable string, no zero-termination is required.
 
 ACK Datagram:
 * 2 Bytes Peer-Id (Network Byte Order)

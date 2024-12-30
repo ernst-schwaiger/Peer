@@ -34,29 +34,29 @@ public:
         }
     }
 
-    void logMsg(std::string const &msg, std::chrono::system_clock::time_point const &now)
+    void logMsg(std::string const &msg, std::chrono::system_clock::time_point const &now) const
     {
         log(m_out, msg, now, GREEN);
     }
 
-    void logWarn(std::string const &msg, std::chrono::system_clock::time_point const &now)
+    void logWarn(std::string const &msg, std::chrono::system_clock::time_point const &now) const
     {
         log(m_out, msg, now, YELLOW);
     }
 
-    void logErr(std::string const &msg, std::chrono::system_clock::time_point const &now)
+    void logErr(std::string const &msg, std::chrono::system_clock::time_point const &now) const
     {
         log(m_err, msg, now, RED);
     }
 
-    void logDebug(std::string const &msg, std::chrono::system_clock::time_point const &now)
+    void logDebug(std::string const &msg, std::chrono::system_clock::time_point const &now) const
     {
         log(m_out, msg, now, BLUE);
     }
 
 private:
 
-    void log(std::ostream &stream, std::string const &msg, std::chrono::system_clock::time_point const &now, std::string color)
+    void log(std::ostream &stream, std::string const &msg, std::chrono::system_clock::time_point const &now, std::string color) const
     {
         auto duration = now.time_since_epoch();
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() % 1000;

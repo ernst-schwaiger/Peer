@@ -1,14 +1,18 @@
 #include <vector>
 #include <stdio.h>
+#include <filesystem>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <assert.h>
-
+#include <stdexcept>
+#include <fmt/core.h>
 #include "App.h"
 #include "MiddleWare.h"
 
 using namespace std;
+
+using namespace std::filesystem;
 
 namespace rgc
 {
@@ -19,12 +23,20 @@ App::App(IRxSocket *pRxSocket, vector<ITxSocket *> &txSockets, std::string const
     m_pipe_path(pipe_path),
     m_stop(false)
 {
-    if (mkfifo(pipe_path.c_str(), 0666) != 0)
+    if (!exists(path(pipe_path)))
     {
-        // FIXME: Error handling
-    }
+        if (mkfifo(pipe_path.c_str(), 0666) != 0)
+        {
+            throw std::runtime_error(fmt::format("Could not create named pipe {}", pipe_path));
+        }
+    }   
 
     m_pipe = open(m_pipe_path.c_str(), O_RDONLY | O_NONBLOCK);
+    
+    if (m_pipe < 0)
+    {
+        throw std::runtime_error(fmt::format("Could not open named pipe {}", pipe_path));
+    }
 }
 
 App::~App()
@@ -35,7 +47,8 @@ App::~App()
 
 void App::deliverMessage(MessageId msgId, payload_t const &payload) const
 {
-    // FIXME
+    log(LOG_TYPE::MSG,
+        fmt::format("Delivered message {} to application layer.", MiddleWare::toString(payload)));
 }
 
 void App::run()
@@ -56,7 +69,7 @@ void App::run()
     }
 }
 
-void App::log(LOG_TYPE type, std::string const &msg)
+void App::log(LOG_TYPE type, std::string const &msg) const
 {
     auto now = std::chrono::system_clock::now();
 
@@ -120,7 +133,7 @@ string App::getNextUserCommand()
 
     if (errno != EAGAIN && errno != EWOULDBLOCK)
     {
-        // FIXME: Error handling
+        log(IApp::LOG_TYPE::ERR, fmt::format("Error reading from named pipe {}.", m_pipe_path));
     }
 
     auto it = find(begin(userCmdBuf), end(userCmdBuf), '\n');

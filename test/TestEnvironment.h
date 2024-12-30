@@ -124,7 +124,7 @@ public:
         return *this;
     }
 
-    void log(LOG_TYPE type, std::string const &msg)
+    void log(LOG_TYPE type, std::string const &msg) const
     {
         switch(type)
         {

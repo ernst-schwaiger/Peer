@@ -152,6 +152,9 @@ public:
     static bool verifyChecksum(uint8_t const *pl, size_t size);
     static checksum_t rfc1071Checksum(uint8_t const *pl, size_t size);
 
+    static std::string toString(struct sockaddr_in const &sockAddr);
+    static std::string toString(rgc::payload_t const &payload);
+
 private:
     typedef struct
     {
@@ -173,9 +176,6 @@ private:
     bool isPeerSupported(peerId_t peerId) const;
     bool isSeqNrOfPeerAccepted(peerId_t peerId, seqNr_t seqNr) const;
     void setAcceptedSeqNrOfPeer(peerId_t peerId, seqNr_t seqNr);
-
-    static std::string toString(struct sockaddr_in const &sockAddr);
-    static std::string toString(rgc::payload_t const &payload);
 
     void injectError(rgc::payload_t &payload) const;
 

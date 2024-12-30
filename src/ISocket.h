@@ -11,7 +11,7 @@ namespace rgc {
 
 static constexpr size_t BUFFER_SIZE = 1024;
 
-typedef std::array<char,  BUFFER_SIZE> rx_buffer_t; 
+typedef std::array<uint8_t,  BUFFER_SIZE> rx_buffer_t; 
 
 struct TransmitStatus
 {

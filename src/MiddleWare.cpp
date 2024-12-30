@@ -29,7 +29,7 @@ void MiddleWare::listenRxSocket(system_clock::time_point const &now)
 
         if (status.status != 0)
         {
-            // FIXME error handling
+             m_pApp->log(IApp::LOG_TYPE::ERR, fmt::format("Error reading from Rx Socket, error code: {}", status.status));
         }
         else
         {
@@ -129,7 +129,7 @@ void MiddleWare::processRxMessage(rgc::payload_t const &payload, struct sockaddr
     }
 
     // Checksum error, discard
-    if (!verifyChecksum(reinterpret_cast<uint8_t const *>(payload.data()), payload.size()))
+    if (!verifyChecksum(payload.data(), payload.size()))
     {
         m_pApp->log(IApp::LOG_TYPE::WARN, "Discarding rx message: Checksum error.");
         return;
@@ -206,7 +206,7 @@ payload_t MiddleWare::makeAckMessage(payload_t const &dataMessage) const
 {
     // Peer-Id
     payload_t ret(begin(dataMessage), begin(dataMessage) + sizeof(peerId_t) + sizeof(seqNr_t));
-    checksum_t checksum = rfc1071Checksum(reinterpret_cast<uint8_t const *>(ret.data()), ret.size());
+    checksum_t checksum = rfc1071Checksum(ret.data(), ret.size());
     ret.push_back(checksum >> 8);
     ret.push_back(checksum & 0xff);
     return ret;
@@ -297,7 +297,6 @@ std::string MiddleWare::toString(rgc::payload_t const &payload)
         }
         else
         {
-            stringstream ss;
             size_t count = 0;
            
             for (auto it = itStart; it < itEnd; ++it)

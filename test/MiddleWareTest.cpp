@@ -23,7 +23,7 @@ namespace rgc
         ret.payload.push_back(seqNr >> 8 );
         ret.payload.push_back(seqNr & 0xff );
         ret.payload.insert(end(ret.payload), begin(s), end(s));
-        checksum_t checksum = MiddleWare::rfc1071Checksum(reinterpret_cast<uint8_t const *>(ret.payload.data()), ret.payload.size());
+        checksum_t checksum = MiddleWare::rfc1071Checksum(ret.payload.data(), ret.payload.size());
         ret.payload.push_back(checksum >> 8);
         ret.payload.push_back(checksum & 0xff);
 
@@ -127,7 +127,7 @@ namespace rgc
         
         sender_payload_t unknownPeer;
         // Incorrect Peer Id in the header
-        unknownPeer.payload.push_back(0x01);
+        unknownPeer.payload.push_back(0xaf);
         unknownPeer.payload.push_back(0xfe);
         unknownPeer.payload.push_back(0x00);
         unknownPeer.payload.push_back(0x01);
@@ -141,6 +141,34 @@ namespace rgc
         p.app.numLoops(100).run(); 
         REQUIRE(p.txSocks[0].m_sentPayloads.empty());
         REQUIRE(p.app.deliveredMsgs.empty());
+    }
+
+    TEST_CASE( "Node shall beable to process binary data in a message", "MiddleWare" )
+    {
+        Peers p({PEER_1});
+        
+        sender_payload_t binaryData;
+        // Message Id
+        binaryData.payload.push_back(0x00);
+        binaryData.payload.push_back(0x01);
+        binaryData.payload.push_back(0x00);
+        binaryData.payload.push_back(0x01);
+
+        // Binary Data
+        binaryData.payload.push_back(0x12);
+        binaryData.payload.push_back(0x34);
+
+        // CRC
+        binaryData.payload.push_back(0xaf);
+        binaryData.payload.push_back(0xfe);
+
+        binaryData.peer = PEER_1;
+
+        // receiving this message with incorrect CRC shall be ignored by the middleware
+        p.rxSocket.m_receivedPayloads.push_back(binaryData);
+        p.app.numLoops(1).run();
+        // ACK and resend to PEER_1
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 2);
     }    
 
 

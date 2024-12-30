@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include <fmt/core.h>
 
 #include "UdpSocket.h"
 
@@ -11,8 +12,13 @@ using namespace rgc;
 
 UdpRxSocket::UdpRxSocket(string const &localIp, uint16_t localPort)
 {
-    // FIXME: Throw if we don't get a valid descriptor
     m_socketDesc = socket(AF_INET, SOCK_DGRAM, 0);
+
+    if (m_socketDesc < 0)
+    {
+        throw std::runtime_error("Could not create Udp Rx socket.");
+    }
+
     // configure for async rx
     int flags = fcntl(m_socketDesc, F_GETFL, 0); 
     fcntl(m_socketDesc, F_SETFL, flags | O_NONBLOCK);
@@ -24,7 +30,7 @@ UdpRxSocket::UdpRxSocket(string const &localIp, uint16_t localPort)
     // Bind the socket to the specified port 
     if (bind(m_socketDesc, reinterpret_cast<const struct sockaddr *>(&m_localSockAddr), sizeof(m_localSockAddr)) < 0) 
     { 
-        // FIXME error handling
+        throw std::runtime_error(fmt::format("Could not bind Udp Rx socket to local port: {}.", localPort));
     }
 }
 
@@ -59,12 +65,14 @@ TransmitStatus UdpRxSocket::receive(rx_buffer_t &buf, struct sockaddr_in &remote
 UdpTxSocket::UdpTxSocket(peer_t const &peer) : m_peerId(peer.peerId)
 {
     std::memset(&m_remoteSockAddr, 0, sizeof(m_remoteSockAddr));
-    // FIXME: Only IP V4?
     m_remoteSockAddr.sin_family = AF_INET;
     m_remoteSockAddr.sin_addr.s_addr = peer.peerIpAddress;
     m_remoteSockAddr.sin_port = htons(peer.peerUdpPort);
-    // FIXME: Throw if we don't get a valid descriptor
     m_socketDesc = socket(AF_INET, SOCK_DGRAM, 0);
+    if (m_socketDesc < 0)
+    {
+        throw std::runtime_error(fmt::format("Could not create Udp Tx socket for peer {}", peer.peerId));
+    }    
 }
 
 UdpTxSocket::~UdpTxSocket()

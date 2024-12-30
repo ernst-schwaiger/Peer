@@ -39,6 +39,6 @@ private:
     seqNr_t m_seqNr;
 };
 
-typedef std::vector<char> payload_t; 
+typedef std::vector<uint8_t> payload_t; 
 
 }

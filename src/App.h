@@ -20,7 +20,7 @@ public:
     virtual ~App();
     virtual void deliverMessage(MessageId msgId, payload_t const &payload) const;
     virtual void run();
-    virtual void log(LOG_TYPE, std::string const &msg);
+    virtual void log(LOG_TYPE, std::string const &msg) const;
 
 private:
     void processPendingUserCommands();

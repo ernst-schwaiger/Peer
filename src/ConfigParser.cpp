@@ -37,12 +37,19 @@ static optional<peer_t> parseLine(string const &line)
 
     if ((line.size() > 0) && (line[0] != COMMENT_TOKEN_CONFIG_FILE))
     {
-        // FIXME: Error handling
         stringstream ss(line);
         getline(ss, field, SEPARATOR_CONFIG_FILE);
         tmp.peerId = safeStrToI(field.c_str(), INVALID_PEER_ID);
         getline(ss, field, SEPARATOR_CONFIG_FILE);
-        tmp.peerIpAddress = inet_addr(field.c_str());
+
+        in_addr tmpAddr;
+        if (inet_aton(field.c_str(), &tmpAddr) < 0)
+        {
+            cerr << "Detected invalid IP V4 address: " << field << ".\n";
+            return ret;
+        }
+        tmp.peerIpAddress = tmpAddr.s_addr;
+
         getline(ss, field, SEPARATOR_CONFIG_FILE);
         tmp.peerUdpPort = safeStrToI(field.c_str(), INVALID_PORT_NUM);
         ret = tmp;
@@ -209,7 +216,6 @@ std::optional<config_t> rgc::getConfigFromOptions(int argc, char *argv[])
         }
         else
         {
-            // FIXME: Also check remote IP Addrs/Ports against own IP Address/Port.
             parsed_values.peers = readConfigFile(configFile);
         }
     }

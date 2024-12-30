@@ -20,7 +20,7 @@ public:
     virtual ~IApp() {};
     virtual void deliverMessage(MessageId msgId, payload_t const &payload) const = 0;
     virtual void run() = 0;
-    virtual void log(LOG_TYPE, std::string const &msg) = 0;
+    virtual void log(LOG_TYPE, std::string const &msg) const = 0;
 };
 
 }
