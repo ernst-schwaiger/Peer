@@ -1,24 +1,28 @@
 #include <vector>
-#include <stdio.h>
+#include <sstream>
 #include <filesystem>
+#include <stdexcept>
+
+#include <stdio.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <assert.h>
-#include <stdexcept>
 #include <fmt/core.h>
+
 #include "App.h"
 #include "MiddleWare.h"
 
 using namespace std;
-
 using namespace std::filesystem;
+
+static constexpr char SEPARATOR_COMMAND = ' ';
 
 namespace rgc
 {
 
-App::App(IRxSocket *pRxSocket, vector<ITxSocket *> &txSockets, std::string const &logFile, string const &pipe_path) :
-    m_middleWare(this, pRxSocket, txSockets),
+App::App(peerId_t ownPeerId, IRxSocket *pRxSocket, vector<ITxSocket *> &txSockets, std::string const &logFile, string const &pipe_path) :
+    m_middleWare(this, ownPeerId, pRxSocket, txSockets),
     m_logger(logFile),
     m_pipe_path(pipe_path),
     m_stop(false)
@@ -102,13 +106,40 @@ void App::processPendingUserCommands()
             break;
         }
 
-        if (command == "stop")
+        log(IApp::LOG_TYPE::DEBUG, command);
+
+        stringstream ss(command);
+        string command_type;
+        getline(ss, command_type, SEPARATOR_COMMAND);
+        string command_arg1;
+        getline(ss, command_arg1, SEPARATOR_COMMAND);
+        string command_arg2;
+        getline(ss, command_arg2, SEPARATOR_COMMAND);
+
+        if (command_type == "stop")
         {
             m_stop = true;
         }
+        else if (command_type == "send")
+        {
+            if (!command_arg1.empty())
+            {
+                m_middleWare.sendMessage(command_arg1, std::chrono::system_clock::now());
+            }
+            else
+            {
+                log(IApp::LOG_TYPE::WARN, fmt::format("Command: {} requires a string as argument", command_type));
+            }
 
-        // FIXME: Parse, deliver command
-        log(IApp::LOG_TYPE::DEBUG, command);
+        }
+        else if (command_type == "inject")
+        {
+            // FIXME: Implement
+        }
+        else
+        {
+            log(IApp::LOG_TYPE::WARN, fmt::format("Unknown command: {}, ignoring", command));
+        }
     }
 }
 

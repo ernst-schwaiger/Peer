@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
             txSockets.push_back(udpTxSockets.back().get());
         }    
 
-        App myApp(udpRxSocket.get(), txSockets, (*optConfig).logFile, pipe_path);
+        App myApp((*optConfig).Id, udpRxSocket.get(), txSockets, (*optConfig).logFile, pipe_path);
         myApp.run();
     }
     catch(const std::runtime_error& e)

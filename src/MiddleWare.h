@@ -136,8 +136,10 @@ private:
 class MiddleWare final
 {
 public:
-    MiddleWare(rgc::IApp *pApp, rgc::IRxSocket *pRxSocket, std::vector<ITxSocket *> &txSockets) : 
+    MiddleWare(rgc::IApp *pApp, peerId_t ownPeerId, rgc::IRxSocket *pRxSocket, std::vector<ITxSocket *> &txSockets) : 
         m_pApp(pApp),
+        m_ownPeerId(ownPeerId),
+        m_nextSeqNr(0),
         m_pRxSocket(pRxSocket),
         m_txSockets(txSockets)
     {
@@ -148,6 +150,7 @@ public:
     }
 
     void rxTxLoop(std::chrono::system_clock::time_point const &now);
+    void sendMessage(std::string &message, std::chrono::system_clock::time_point const &now);
 
     static bool verifyChecksum(uint8_t const *pl, size_t size);
     static checksum_t rfc1071Checksum(uint8_t const *pl, size_t size);
@@ -161,7 +164,6 @@ private:
         peerId_t peerId;
         seqNr_t nextSeqNr;
     } nextSeqNr_t;
-
 
     void listenRxSocket(std::chrono::system_clock::time_point const &now);
     void checkPendingTxMessages(std::chrono::system_clock::time_point const &now);
@@ -192,6 +194,8 @@ private:
     }
 
     rgc::IApp *m_pApp;
+    peerId_t m_ownPeerId;
+    seqNr_t m_nextSeqNr;
     rgc::IRxSocket *m_pRxSocket;
     std::vector<ITxSocket *> &m_txSockets;
     std::vector<nextSeqNr_t> m_nextSeqNrs;

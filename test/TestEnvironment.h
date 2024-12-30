@@ -15,7 +15,8 @@ using namespace std;
 
 namespace rgc {
 
-static constexpr std::chrono::duration<int64_t, std::milli> LOOP_TIME_100_MS = std::chrono::milliseconds(100);        
+static constexpr std::chrono::duration<int64_t, std::milli> LOOP_TIME_100_MS = std::chrono::milliseconds(100);   
+static constexpr peerId_t OWN_PEER_ID = 42;     
 
 typedef struct MsgIdAndPayload
 {
@@ -97,7 +98,7 @@ class TestApp : public IApp
 {
 public:
     TestApp(IRxSocket *pRxSocket, std::vector<ITxSocket *> &txSockets, size_t numLoops = 10) : 
-        m_middleWare(this, pRxSocket, txSockets),
+        m_middleWare(this, OWN_PEER_ID, pRxSocket, txSockets),
         m_logger(),
         m_numLoops(numLoops),
         m_now() 

@@ -18,7 +18,7 @@ namespace rgc
     static sender_payload_t mkRxPayload(peer_t const &sender, seqNr_t seqNr, string s = "")
     {
         sender_payload_t ret;
-        ret.payload.reserve(s.length() + 4);
+        ret.payload.reserve(s.length() + 6);
         ret.payload.push_back(sender.peerId >> 8 );
         ret.payload.push_back(sender.peerId & 0xff );
         ret.payload.push_back(seqNr >> 8 );
@@ -35,7 +35,7 @@ namespace rgc
     static sender_payload_t mkRxResendPayload(peer_t const &sender, peer_t const &originator, seqNr_t seqNr, string s = "")
     {
         sender_payload_t ret;
-        ret.payload.reserve(s.length() + 4);
+        ret.payload.reserve(s.length() + 6);
         ret.payload.push_back(originator.peerId >> 8 );
         ret.payload.push_back(originator.peerId & 0xff );
         ret.payload.push_back(seqNr >> 8 );

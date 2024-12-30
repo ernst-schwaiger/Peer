@@ -17,6 +17,24 @@ void MiddleWare::rxTxLoop(system_clock::time_point const &now)
     checkPendingTxMessages(now);
 }
 
+void MiddleWare::sendMessage(string &message, system_clock::time_point const &now)
+{
+    MessageId msgId = MessageId(m_ownPeerId, m_nextSeqNr);
+    payload_t payload;
+    payload.reserve(message.length() + 6);
+    payload.push_back(m_ownPeerId >> 8);
+    payload.push_back(m_ownPeerId & 0xff);
+    payload.push_back(m_nextSeqNr >> 8);
+    payload.push_back(m_nextSeqNr & 0xff);
+    payload.insert(end(payload), begin(message), end(message));
+    checksum_t checksum = rfc1071Checksum(payload.data(), payload.size());
+    payload.push_back(checksum >> 8);
+    payload.push_back(checksum & 0xff);
+
+    m_txMessageStates.emplace_front(msgId, m_txSockets, payload, now);
+    ++m_nextSeqNr;
+}
+
 void MiddleWare::listenRxSocket(system_clock::time_point const &now)
 {
     rx_buffer_t buf;
