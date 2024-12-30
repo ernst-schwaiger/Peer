@@ -185,7 +185,7 @@ void MiddleWare::processRxAckMessage(rgc::payload_t const &payload, peerId_t pee
         if (txState != nullptr)
         {
             txState->setAcknowledged();
-            m_pApp->log(IApp::LOG_TYPE::MSG, "Received ACK for sent message.");
+            m_pApp->log(IApp::LOG_TYPE::MSG, fmt::format("Received ACK for sent message {} from {}.", toString(payload), toString(remoteSockAddr)));
         }
     }
 }
@@ -200,7 +200,7 @@ void MiddleWare::processRxDataMessage(rgc::payload_t const &payload, peerId_t pe
 
     if (!isSeqNrOfPeerAccepted(peerId, seqNr))
     {
-        m_pApp->log(IApp::LOG_TYPE::WARN, fmt::format("Discarding message due to SeqNr: {} from {}.", toString(payload), toString(remoteSockAddr)));
+        m_pApp->log(IApp::LOG_TYPE::MSG, fmt::format("Discarding message due to SeqNr: {} from {}.", toString(payload), toString(remoteSockAddr)));
         return;
     }
 
@@ -236,7 +236,7 @@ bool MiddleWare::isPeerSupported(peerId_t peerId) const
 {
     auto it = std::find_if(begin(m_txSockets), end(m_txSockets),
         [&peerId](auto const &txSocket) { return (txSocket->getPeerId() == peerId); });
-    return (it != end(m_txSockets));
+    return (it != end(m_txSockets) || m_ownPeerId == peerId);
 }
 
 ITxSocket *MiddleWare::getTxSocketForRemoteAddress(struct sockaddr_in const &remoteSockAddr) const

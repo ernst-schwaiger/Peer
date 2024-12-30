@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
         // Tx Sockets for each remote peer for sending messages
         for (auto const &peer : (*optConfig).peers)
         {
-            udpTxSockets.push_back(std::make_unique<UdpTxSocket>(peer));
+            udpTxSockets.push_back(std::make_unique<UdpTxSocket>(peer, udpRxSocket->getSocketDescriptor()));
             txSockets.push_back(udpTxSockets.back().get());
         }    
 

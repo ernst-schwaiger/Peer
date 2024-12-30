@@ -52,10 +52,8 @@ generates a `Peer/debug/coverage.html` indicating covered/not covered parts of t
 ## ToDos
 
 * Error Injection
-* Command Interface/Named Pipe
 * RFC 1071 CRC Implementation
 * Send every message to "ourselves"
-* Resolve FIXMEs
 * Check if we lose incoming Udp Packets due to async Rx processing
 
 ## Open for Clarification
@@ -74,7 +72,7 @@ Message Datagram:
 * 1..n Bytes Message
 * 2 Bytes RFC 1071 (Network Byte Order)
 
-Message contains arbitrary binary data. If message represents a printable string, no zero-termination is required.
+Messages only contain ascii chars, no zero-termination is required.
 
 ACK Datagram:
 * 2 Bytes Peer-Id (Network Byte Order)
