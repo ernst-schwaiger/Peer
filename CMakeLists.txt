@@ -19,7 +19,7 @@ FetchContent_Declare(
 FetchContent_Declare(
   fmt
   GIT_REPOSITORY https://github.com/fmtlib/fmt
-  GIT_TAG        8.0.1)
+  GIT_TAG        11.1.1)
 
 FetchContent_MakeAvailable(Catch2 fmt)
 
@@ -63,10 +63,11 @@ add_executable(PeerTest
     )
 
 # for coverage: ensure tests are executed in debug mode
-set(CMAKE_BUILD_TYPE "Debug")
-# enable coverage for the tests
-target_compile_options(PeerTest PRIVATE --coverage)
-target_link_options(PeerTest PRIVATE --coverage)
+#set(CMAKE_BUILD_TYPE "Debug")
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_options(PeerTest PRIVATE --coverage)
+    target_link_options(PeerTest PRIVATE --coverage)
+endif()
 
 target_include_directories(PeerTest PRIVATE 
     ${CMAKE_SOURCE_DIR}/src)
@@ -75,8 +76,10 @@ target_link_libraries(PeerTest PRIVATE Catch2::Catch2WithMain fmt::fmt)
 add_test(NAME PeerTest COMMAND PeerTest)
 
 # Custom target to run tests and generate coverage report 
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 add_custom_target(coverage 
     COMMAND ${CMAKE_CTEST_COMMAND} -T test --output-on-failure 
     COMMAND gcovr -r ${CMAKE_SOURCE_DIR} --xml -o coverage.xml 
     COMMAND gcovr -r ${CMAKE_SOURCE_DIR} --html --html-details -o coverage.html
     DEPENDS PeerTest )
+endif()
