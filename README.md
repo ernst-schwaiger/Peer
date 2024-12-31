@@ -17,17 +17,18 @@ make -j
 
 ## Execute 
 ```
-Usage: ./Peer [-i <peerId>] [-p <udpPort>] [-c <configFile>] [-l <logFile>]
-   <peerId>        unique numerical id in the range [0..65534], default is 42.
-   <udpPort>       numerical id in the range [1025..65534], default is 4242.
+Usage: ./Peer [-i <peerId>] [-a <ipaddr>] [-p <udpPort>] [-c <configFile>] [-l <logFile>]
+   <peerId>        unique peer id in the range [0..65534], default is 1.
+   <ipaddr>        local IPV4 address, default is 127.0.0.1.
+   <udpPort>       local udp port in the range [1025..65534], default is 4201.
    <configFile>    path to an already existing configuration file, default is ./peer.cfg.
-   <logFile>       path to log file, default is stdout/stderr.
+   <logFile>       path to log file. If none is provided stdout/stderr is used.
 ```
 `Peer/peer.cfg` contains example configuration data.
 After the `Peer` process started, it creates a named pipe, e.g. `/tmp/peer_pipe_<peerId>` and listens for user commands, e.g.
 ```
-echo send foobar >/tmp/peer_pipe_42
-echo stop >/tmp/peer_pipe_42
+echo send foobar >/tmp/peer_pipe_1
+echo stop >/tmp/peer_pipe_1
 ```
 The "stop" command terminates the `Peer` process and removes the named pipe.
 
@@ -55,6 +56,7 @@ generates a `Peer/debug/coverage.html` indicating covered/not covered parts of t
 * RFC 1071 CRC Implementation
 * Send every message to "ourselves"
 * Check if we lose incoming Udp Packets due to async Rx processing
+* Make the ISocket functions that receive from/send to Udp [nodiscard], reset errno after an error was discovered.
 
 ## Open for Clarification
 

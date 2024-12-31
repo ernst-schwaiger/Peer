@@ -44,8 +44,9 @@ add_executable(Peer
 # Increase Warnings, treat warnings as errors
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror")
 
-# Enable AddressSanitizer for Debug builds on clang or gcc only
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+# Enable AddressSanitizer for X86_64 Debug builds on clang or gcc only
+# Sanitizers don't seem to work on ARM/Raspberry Pi
+if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address,undefined")
         set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address,undefined")
