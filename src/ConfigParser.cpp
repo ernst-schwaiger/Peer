@@ -13,8 +13,9 @@ using namespace std::filesystem;
 
 static constexpr peerId_t INVALID_PEER_ID = UINT16_MAX;
 static constexpr uint16_t INVALID_PORT_NUM = UINT16_MAX;
-static constexpr peerId_t DEFAULT_PEER_ID = 42;
-static constexpr uint16_t DEFAULT_PORT_NUM = 4242;
+static constexpr peerId_t DEFAULT_PEER_ID = 1;
+static constexpr uint16_t DEFAULT_PORT_NUM = 4201;
+static constexpr char const * DEFAULT_IP_ADDRESS = "127.0.0.1";
 static constexpr char const * DEFAULT_CONFIG_FILE = "./peer.cfg";
 static constexpr char SEPARATOR_CONFIG_FILE = ',';
 static constexpr char COMMENT_TOKEN_CONFIG_FILE = '#';
@@ -129,17 +130,20 @@ static vector<peer_t> readConfigFile(string const &configFilePath)
 std::optional<config_t> rgc::getConfigFromOptions(int argc, char *argv[])
 {
     optional<config_t> ret;
-    config_t parsed_values{ DEFAULT_PEER_ID, DEFAULT_PORT_NUM, "", {}, {} };
+    config_t parsed_values{ DEFAULT_PEER_ID, DEFAULT_IP_ADDRESS, DEFAULT_PORT_NUM, "", {}, {} };
     bool error = false;   
-    char c;
+    int8_t c; // in contrast to Intel, char seems to be unsigned on ARM, int8_t works on both architectures
     string configFile = DEFAULT_CONFIG_FILE;
 
-    while ((c = getopt (argc, argv, "i:p:c:l:e:")) != -1)
+    while ((c = getopt (argc, argv, "i:a:p:c:l:e:")) != -1)
     {
         switch (c)
         {
         case 'i':
             parsed_values.Id = safeStrToI(optarg, INVALID_PEER_ID);
+        break;
+        case 'a':
+            parsed_values.ipaddr = optarg;
         break;
         case 'p':
             parsed_values.udpPort = safeStrToI(optarg, INVALID_PORT_NUM);
@@ -155,7 +159,7 @@ std::optional<config_t> rgc::getConfigFromOptions(int argc, char *argv[])
         break;
         case '?':
         {
-            if (optopt == 'i' || optopt == 'p' || optopt == 'c' || optopt == 'l' || optopt == 'e')
+            if (optopt == 'i' || optopt == 'a' || optopt == 'p' || optopt == 'c' || optopt == 'l' || optopt == 'e')
             {
                 cerr << "Option -" << optopt << "requires an argument\n";
             }
@@ -230,10 +234,11 @@ std::optional<config_t> rgc::getConfigFromOptions(int argc, char *argv[])
 
 void rgc::printUsage(char *argv0)
 {
-    cerr << "Usage: " << argv0 << " [-i <peerId>] [-p <udpPort>] [-c <configFile>] [-l <logFile>]\n";
-    cerr << "   <peerId>        unique numerical id in the range [0.." << INVALID_PEER_ID - 1 << "], default is " << DEFAULT_PEER_ID <<".\n";
-    cerr << "   <udpPort>       numerical id in the range [1025.." << INVALID_PORT_NUM - 1 << "], default is " << DEFAULT_PORT_NUM << ".\n";
+    cerr << "Usage: " << argv0 << " [-i <peerId>] [-a <ipaddr>] [-p <udpPort>] [-c <configFile>] [-l <logFile>]\n";
+    cerr << "   <peerId>        unique peer id in the range [0.." << INVALID_PEER_ID - 1 << "], default is " << DEFAULT_PEER_ID <<".\n";
+    cerr << "   <ipaddr>        local IPV4 address, default is " << DEFAULT_IP_ADDRESS <<".\n";
+    cerr << "   <udpPort>       local udp port in the range [1025.." << INVALID_PORT_NUM - 1 << "], default is " << DEFAULT_PORT_NUM << ".\n";
     cerr << "   <configFile>    path to an already existing configuration file, default is " << DEFAULT_CONFIG_FILE << ".\n";
-    cerr << "   <logFile>       path to log file, default is stdout/stderr.\n";
+    cerr << "   <logFile>       path to log file. If none is provided stdout/stderr is used.\n";
 }
 

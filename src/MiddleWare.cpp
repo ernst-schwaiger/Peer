@@ -119,13 +119,20 @@ void MiddleWare::processTxMessage(TxState &txState, payload_t const &msg, system
     }
     else
     {
-        txState.getSocket()->send(msg);
+        auto result = txState.getSocket()->send(msg);
+        auto const &remoteSockAddr = txState.getSocket()->getRemoteSocketAddr();
+        if (result.status != 0)
+        {
+            m_pApp->log(IApp::LOG_TYPE::ERR, fmt::format("Failed to send message {} to {}.", toString(msg), toString(remoteSockAddr)));
+        }
+        else
+        {
+            m_pApp->log(IApp::LOG_TYPE::MSG, fmt::format("Sending message {} to {}.", toString(msg), toString(remoteSockAddr)));
+        }
+
         system_clock::time_point timeout = now + ACK_TIMEOUT;
         txState.setTimeout(timeout);
         txState.setRemainingTxAttempts(remainingTxAttempts - 1);
-        
-        auto const &remoteSockAddr = txState.getSocket()->getRemoteSocketAddr();
-        m_pApp->log(IApp::LOG_TYPE::MSG, fmt::format("Sending message {} to {}.", toString(msg), toString(remoteSockAddr)));
     }
 }
 

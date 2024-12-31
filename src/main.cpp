@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
         // Named pipe for receiving user commands
         string pipe_path = fmt::format("/tmp/peer_pipe_{}", (*optConfig).Id);
         // Rx Socket for receiving messages from other peers
-        auto udpRxSocket = make_unique<UdpRxSocket>(std::string("127.0.0.1"), (*optConfig).udpPort);
+        auto udpRxSocket = make_unique<UdpRxSocket>(std::string((*optConfig).ipaddr), (*optConfig).udpPort);
         vector<unique_ptr<UdpTxSocket>> udpTxSockets;
         vector<ITxSocket *> txSockets;
         // Tx Sockets for each remote peer for sending messages
@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
         }    
 
         App myApp((*optConfig).Id, udpRxSocket.get(), txSockets, (*optConfig).logFile, pipe_path);
+        myApp.log(IApp::LOG_TYPE::MSG, fmt::format("Starting peer {} on {}:{}", (*optConfig).Id, (*optConfig).ipaddr, (*optConfig).udpPort));
         myApp.run();
     }
     catch(const std::runtime_error& e)
