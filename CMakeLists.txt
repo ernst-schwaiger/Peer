@@ -42,7 +42,7 @@ add_executable(Peer
     )
 
 # Increase Warnings, treat warnings as errors
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
 
 # Enable AddressSanitizer for X86_64 Debug builds on clang or gcc only
 # Sanitizers don't seem to work on ARM/Raspberry Pi

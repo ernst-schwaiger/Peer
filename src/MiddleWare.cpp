@@ -1,5 +1,6 @@
 #include <numeric>
 #include <fmt/core.h>
+#include <fmt/ranges.h>
 #include <sstream>
 #include <iomanip>
 
@@ -8,6 +9,9 @@
 using namespace std;
 using namespace rgc;
 using namespace std::chrono;
+
+static constexpr size_t MSG_ID_SIZE = 4;
+static constexpr size_t CRC_SIZE = 2;
 
 static constexpr duration<int64_t, std::milli> ACK_TIMEOUT = milliseconds(1000);
 
@@ -68,7 +72,7 @@ void MiddleWare::listenRxSocket(system_clock::time_point const &now)
 
 void MiddleWare::injectError(rgc::payload_t &payload) const
 {
-    // FIXME: Implement this
+    payload = payload; // FIXME: Remove this after this method is implemented
 }
 
 void MiddleWare::checkPendingTxMessages(system_clock::time_point const &now)
@@ -123,7 +127,8 @@ void MiddleWare::processTxMessage(TxState &txState, payload_t const &msg, system
         auto const &remoteSockAddr = txState.getSocket()->getRemoteSocketAddr();
         if (result.status != 0)
         {
-            m_pApp->log(IApp::LOG_TYPE::ERR, fmt::format("Failed to send message {} to {}.", toString(msg), toString(remoteSockAddr)));
+            m_pApp->log(IApp::LOG_TYPE::ERR, 
+                fmt::format("Failed to send message {} to {}; error code: {}", toString(msg), toString(remoteSockAddr), result.status));
         }
         else
         {
@@ -147,7 +152,7 @@ void MiddleWare::processRxMessage(rgc::payload_t const &payload, struct sockaddr
     }
 
     // Truncated frame, discard
-    if (payload.size() < sizeof(peerId_t) + sizeof(seqNr_t) + sizeof(checksum_t))
+    if (payload.size() < MSG_ID_SIZE + CRC_SIZE)
     {
         m_pApp->log(IApp::LOG_TYPE::WARN, "Discarding rx message: Truncated.");
         return;
@@ -167,7 +172,7 @@ void MiddleWare::processRxMessage(rgc::payload_t const &payload, struct sockaddr
         return;
     }
 
-    bool isAckMessage = (payload.size() == sizeof(peerId_t) + sizeof(seqNr_t) + sizeof(checksum_t));
+    bool isAckMessage = (payload.size() == MSG_ID_SIZE + CRC_SIZE);
 
     if (isAckMessage)
     {
@@ -200,10 +205,15 @@ void MiddleWare::processRxAckMessage(rgc::payload_t const &payload, peerId_t pee
 void MiddleWare::processRxDataMessage(rgc::payload_t const &payload, peerId_t peerId, ITxSocket *txSocket, system_clock::time_point const &now)
 {
     // Send back an ACK in any case, even if we already delivered that message to the app
-    txSocket->send(makeAckMessage(payload));
+    struct sockaddr_in const &remoteSockAddr = txSocket->getRemoteSocketAddr();
+    TransmitStatus txStatus = txSocket->send(makeAckMessage(payload));
+    if (txStatus.status != 0)
+    {
+        m_pApp->log(IApp::LOG_TYPE::ERR, 
+            fmt::format("Failed to send ACK for message: {} from {}; error code: {}.", toString(payload), toString(remoteSockAddr), txStatus.status));
+    }
 
     seqNr_t seqNr = (payload[2] << 8) + payload[3];
-    struct sockaddr_in const &remoteSockAddr = txSocket->getRemoteSocketAddr();
 
     if (!isSeqNrOfPeerAccepted(peerId, seqNr))
     {
@@ -237,7 +247,6 @@ payload_t MiddleWare::makeAckMessage(payload_t const &dataMessage) const
     ret.push_back(checksum & 0xff);
     return ret;
 }
-
 
 bool MiddleWare::isPeerSupported(peerId_t peerId) const
 {
@@ -298,46 +307,49 @@ std::string MiddleWare::toString(struct sockaddr_in const &sockAddr)
     return fmt::format("{}.{}.{}.{}:{}", pIP[0], pIP[1], pIP[2], pIP[3], (pPort[0] << 8) + pPort[1]);
 }
 
+std::string MiddleWare::toString(rgc::MessageId const &msgId)
+{
+    return fmt::format("[{},{}]", msgId.getPeerId(), msgId.getSeqNr());
+}
+
 std::string MiddleWare::toString(rgc::payload_t const &payload)
 {
     stringstream ss;
 
-    if (payload.size() >= 4)
+    if (payload.size() >= MSG_ID_SIZE)
     {
-        uint8_t const *pHeader = reinterpret_cast<uint8_t const *>(payload.data());
-        ss << fmt::format("({},{})", (pHeader[0] << 8) + pHeader[1], (pHeader[2] << 8) + pHeader[3]);
+        uint8_t const *pHeader = payload.data();
+        MessageId msgId((pHeader[0] << 8) + pHeader[1], (pHeader[2] << 8) + pHeader[3]);
+        ss << toString(msgId);
     }
 
     // We have got data
-    if (payload.size() > 4 + 2)
+    if (payload.size() > MSG_ID_SIZE + CRC_SIZE)
     {
-        auto itStart = begin(payload) + 4;
-        auto itEnd = end(payload) - 2;
+        auto itStart = begin(payload) + MSG_ID_SIZE;
+        auto itEnd = end(payload) - CRC_SIZE;
 
         bool isPrintable = std::accumulate(itStart, itEnd, true, [](bool a, auto const &el) { return (a && (std::isprint(el))); });
-        ss << " - ";
-
+        ss << "[";
         if (isPrintable)
         {
             ss << "\"" << string(itStart, itEnd) << "\"";
         }
         else
         {
-            size_t count = 0;
-           
-            for (auto it = itStart; it < itEnd; ++it)
+            ss << "0x";
+            for (auto it = itStart; it < itEnd; it++)
             {
-                ss << "0x" << std::setw(2) << std::hex << std::setfill('0') << static_cast<uint16_t>(*it);
-                ss << ((it + 1 < itEnd) ? "," : "");
-                ss << (((++count) % 8 == 0) ? "\n" : " "); 
+                ss << fmt::format("{:02x}", *it);
             }
         }
+        ss << "]";
     }
 
-    if (payload.size() >= 4 + 2)
+    if (payload.size() >= MSG_ID_SIZE + CRC_SIZE)
     {
-        uint8_t const *pCRC = reinterpret_cast<uint8_t const *>(&(payload.data()[payload.size() - 2]));
-        ss << " - (0x" << std::setw(4) << std::hex << std::setfill('0') << static_cast<uint16_t>((pCRC[0] << 8) + pCRC[1]) << ")";
+        uint8_t const *pCRC = &(payload.data()[payload.size() - 2]);
+        ss << fmt::format("[0x{:04x}]", (pCRC[0] << 8) + pCRC[1]);
     }
     return ss.str();
 }
@@ -352,6 +364,8 @@ bool MiddleWare::verifyChecksum(uint8_t const *pl, size_t size)
 
 checksum_t MiddleWare::rfc1071Checksum(uint8_t const *pl, size_t size)
 {
+    pl = pl; // FIXME: Remove this after implementation
+    size= size; // FIXME: Remove this after implementation
     // FIXME: Implement this
     return 0xaffe;
 }

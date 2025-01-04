@@ -13,7 +13,7 @@ static constexpr size_t BUFFER_SIZE = 1024;
 
 typedef std::array<uint8_t,  BUFFER_SIZE> rx_buffer_t; 
 
-struct TransmitStatus
+struct [[nodiscard]] TransmitStatus
 {
     size_t transmitBytes;
     uint8_t status;

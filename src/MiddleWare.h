@@ -157,6 +157,7 @@ public:
 
     static std::string toString(struct sockaddr_in const &sockAddr);
     static std::string toString(rgc::payload_t const &payload);
+    static std::string toString(rgc::MessageId const &msgId);
 
 private:
     typedef struct

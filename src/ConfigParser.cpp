@@ -130,7 +130,7 @@ static vector<peer_t> readConfigFile(string const &configFilePath)
 std::optional<config_t> rgc::getConfigFromOptions(int argc, char *argv[])
 {
     optional<config_t> ret;
-    config_t parsed_values{ DEFAULT_PEER_ID, DEFAULT_IP_ADDRESS, DEFAULT_PORT_NUM, "", {}, {} };
+    config_t parsed_values{ DEFAULT_PEER_ID, DEFAULT_IP_ADDRESS, DEFAULT_PORT_NUM, "", {}, {}, {} };
     bool error = false;   
     int8_t c; // in contrast to Intel, char seems to be unsigned on ARM, int8_t works on both architectures
     string configFile = DEFAULT_CONFIG_FILE;

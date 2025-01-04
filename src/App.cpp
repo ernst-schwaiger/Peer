@@ -52,7 +52,7 @@ App::~App()
 void App::deliverMessage(MessageId msgId, payload_t const &payload) const
 {
     log(LOG_TYPE::MSG,
-        fmt::format("Delivered message {} to application layer.", MiddleWare::toString(payload)));
+        fmt::format("Delivered message {}:{} to application layer.", MiddleWare::toString(msgId), MiddleWare::toString(payload)));
 }
 
 void App::run()
