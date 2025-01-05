@@ -3,7 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <unistd.h>
-
+#include <fmt/core.h>
 
 #include "ISocket.h"
 #include "IApp.h"
@@ -102,10 +102,16 @@ public:
         m_logger(),
         m_numLoops(numLoops),
         m_now() 
-    {}
-    virtual ~TestApp() {}
+    {
+        log(IApp::LOG_TYPE::DEBUG, "Starting TestApp...");
+    }
+    virtual ~TestApp() 
+    {
+        log(IApp::LOG_TYPE::DEBUG, "Terminating TestApp...");
+    }
     virtual void deliverMessage(MessageId msgId, payload_t const &payload) const 
-    { 
+    {
+        log(IApp::LOG_TYPE::DEBUG, fmt::format("Delivered Message {}", MiddleWare::toString(payload)));
         msgId_payload_t entry { msgId, payload };
         deliveredMsgs.push_back(entry); 
     }
@@ -130,7 +136,9 @@ public:
         switch(type)
         {
             case LOG_TYPE::DEBUG:
+#ifndef NDEBUG
                 m_logger.logDebug(msg, m_now);
+#endif
                 break;
             case LOG_TYPE::ERR:
                 m_logger.logErr(msg, m_now);

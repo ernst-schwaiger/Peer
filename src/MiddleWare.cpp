@@ -118,7 +118,8 @@ void MiddleWare::processTxMessage(TxState &txState, payload_t const &msg, system
     {
         // we did not get an ACK after the third tx attempt. we handle this case
         // as if it got an ACK
-        m_pApp->log(IApp::LOG_TYPE::WARN, "Got no ACK after max number of retries, giving up.");
+        m_pApp->log(IApp::LOG_TYPE::DEBUG, 
+            fmt::format("Got no ACK for message {} after max number of retries, giving up.", toString(msg)));
         txState.setAcknowledged();
     }
     else
@@ -147,7 +148,7 @@ void MiddleWare::processRxMessage(rgc::payload_t const &payload, struct sockaddr
 
     if (txSocket == nullptr)
     {
-        m_pApp->log(IApp::LOG_TYPE::WARN, fmt::format("Discarding rx message from unknown IP/Port: {}.", toString(remoteSockAddr)));
+        m_pApp->log(IApp::LOG_TYPE::WARN, fmt::format("Discarding rx message: Unknown IP/Port: {}.", toString(remoteSockAddr)));
         return;
     }
 
@@ -197,7 +198,7 @@ void MiddleWare::processRxAckMessage(rgc::payload_t const &payload, peerId_t pee
         if (txState != nullptr)
         {
             txState->setAcknowledged();
-            m_pApp->log(IApp::LOG_TYPE::MSG, fmt::format("Received ACK for sent message {} from {}.", toString(payload), toString(remoteSockAddr)));
+            m_pApp->log(IApp::LOG_TYPE::DEBUG, fmt::format("Received ACK for sent message {} from {}.", toString(payload), toString(remoteSockAddr)));
         }
     }
 }
@@ -217,7 +218,7 @@ void MiddleWare::processRxDataMessage(rgc::payload_t const &payload, peerId_t pe
 
     if (!isSeqNrOfPeerAccepted(peerId, seqNr))
     {
-        m_pApp->log(IApp::LOG_TYPE::MSG, fmt::format("Discarding message due to SeqNr: {} from {}.", toString(payload), toString(remoteSockAddr)));
+        m_pApp->log(IApp::LOG_TYPE::DEBUG, fmt::format("Discarding message due to SeqNr: {} from {}.", toString(payload), toString(remoteSockAddr)));
         return;
     }
 
@@ -227,14 +228,14 @@ void MiddleWare::processRxDataMessage(rgc::payload_t const &payload, peerId_t pe
     if (txMsgState == nullptr)
     {
         // No such message found in the state, set up anew
-        m_pApp->log(IApp::LOG_TYPE::MSG, fmt::format("Received data message {} from {}.", toString(payload), toString(remoteSockAddr)));
+        m_pApp->log(IApp::LOG_TYPE::DEBUG, fmt::format("Received data message {} from {}.", toString(payload), toString(remoteSockAddr)));
         m_txMessageStates.emplace_front(msgId, m_txSockets, payload, now);
         setAcceptedSeqNrOfPeer(peerId, seqNr + 1);
     }
     else
     {
         // We have received that message already, ignore it here
-        m_pApp->log(IApp::LOG_TYPE::MSG, fmt::format("Discarding already received message {} from {}.", toString(payload), toString(remoteSockAddr)));
+        m_pApp->log(IApp::LOG_TYPE::DEBUG, fmt::format("Discarding already received message {} from {}.", toString(payload), toString(remoteSockAddr)));
     }
 }
 

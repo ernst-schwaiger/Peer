@@ -51,8 +51,9 @@ App::~App()
 
 void App::deliverMessage(MessageId msgId, payload_t const &payload) const
 {
+    msgId = msgId; // leave this in to avoid unused parameter error
     log(LOG_TYPE::MSG,
-        fmt::format("Delivered message {}:{} to application layer.", MiddleWare::toString(msgId), MiddleWare::toString(payload)));
+        fmt::format("Delivered message {} to application layer.", MiddleWare::toString(payload)));
 }
 
 void App::run()
@@ -81,7 +82,9 @@ void App::log(LOG_TYPE type, std::string const &msg) const
     switch(type)
     {
         case LOG_TYPE::DEBUG:
+#ifndef NDEBUG
             m_logger.logDebug(msg, now);
+#endif
             break;
         case LOG_TYPE::ERR:
             m_logger.logErr(msg, now);
@@ -129,7 +132,7 @@ void App::processPendingUserCommands()
             }
             else
             {
-                log(IApp::LOG_TYPE::WARN, fmt::format("Command: {} requires a string as argument", command_type));
+                log(IApp::LOG_TYPE::ERR, fmt::format("Command: {} requires a string as argument", command_type));
             }
 
         }
@@ -139,7 +142,7 @@ void App::processPendingUserCommands()
         }
         else
         {
-            log(IApp::LOG_TYPE::WARN, fmt::format("Unknown command: {}, ignoring", command));
+            log(IApp::LOG_TYPE::ERR, fmt::format("Unknown command: {}", command));
         }
     }
 }

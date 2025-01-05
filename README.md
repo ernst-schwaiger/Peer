@@ -55,9 +55,6 @@ generates a `Peer/debug/coverage.html` indicating covered/not covered parts of t
 * Error Injection
 * RFC 1071 CRC Implementation
 * Check if we lose incoming Udp Packets due to async Rx processing
-* Make the ISocket functions that receive from/send to Udp [nodiscard], reset errno after an error was discovered.
-* Test transmission of non ascii strings via named pipes
-* Test termination of peer after message transmission.
 
 ## Open for Clarification
 

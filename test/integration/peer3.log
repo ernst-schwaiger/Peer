@@ -1,0 +1,13 @@
+
+[32m2025-01-05 10:33:08.219 - Starting peer 3 on 127.0.0.1:4203
+[0m[34m2025-01-05 10:33:09.931 - Received data message [1,0]["Hello_World!"][0xaffe] from 127.0.0.1:4202.
+[0m[32m2025-01-05 10:33:09.931 - Sending message [1,0]["Hello_World!"][0xaffe] to 127.0.0.1:4201.
+[0m[32m2025-01-05 10:33:11.021 - Sending message [1,0]["Hello_World!"][0xaffe] to 127.0.0.1:4201.
+[0m[32m2025-01-05 10:33:11.021 - Sending message [1,0]["Hello_World!"][0xaffe] to 127.0.0.1:4202.
+[0m[34m2025-01-05 10:33:11.123 - Received ACK for sent message [1,0][0xaffe] from 127.0.0.1:4202.
+[0m[32m2025-01-05 10:33:12.089 - Sending message [1,0]["Hello_World!"][0xaffe] to 127.0.0.1:4201.
+[0m[34m2025-01-05 10:33:13.181 - Got no ACK for message [1,0]["Hello_World!"][0xaffe] after max number of retries, giving up.
+[0m[32m2025-01-05 10:33:13.181 - Delivered message [1,0]["Hello_World!"][0xaffe] to application layer.
+[0m[34m2025-01-05 10:33:15.289 - stop
+[0m[32m2025-01-05 10:33:15.289 - Shutting down peer 3
+[0m

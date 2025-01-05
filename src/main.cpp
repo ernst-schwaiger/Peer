@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
         App myApp((*optConfig).Id, udpRxSocket.get(), txSockets, (*optConfig).logFile, pipe_path);
         myApp.log(IApp::LOG_TYPE::MSG, fmt::format("Starting peer {} on {}:{}", (*optConfig).Id, (*optConfig).ipaddr, (*optConfig).udpPort));
         myApp.run();
+        myApp.log(IApp::LOG_TYPE::MSG, fmt::format("Shutting down peer {}", (*optConfig).Id));
     }
     catch(const std::runtime_error& e)
     {
