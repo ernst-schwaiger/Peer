@@ -33,7 +33,7 @@ UdpRxSocket::UdpRxSocket(string const &localIp, uint16_t localPort)
     m_localSockAddr.sin_port = htons(localPort);
 
     // Bind the socket to the specified port 
-    if (bind(m_socketDesc, reinterpret_cast<const struct sockaddr *>(&m_localSockAddr), sizeof(m_localSockAddr)) < 0) 
+    if (::bind(m_socketDesc, reinterpret_cast<const struct sockaddr *>(&m_localSockAddr), sizeof(m_localSockAddr)) < 0) 
     { 
         throw std::runtime_error(fmt::format("Could not bind Udp Rx socket to local port: {}.", localPort));
     }

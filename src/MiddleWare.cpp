@@ -72,7 +72,7 @@ void MiddleWare::listenRxSocket(system_clock::time_point const &now)
 
 void MiddleWare::injectError(rgc::payload_t &payload) const
 {
-    payload = payload; // FIXME: Remove this after this method is implemented
+    if (payload[0]){}; // FIXME: Remove this after this method is implemented
 }
 
 void MiddleWare::checkPendingTxMessages(system_clock::time_point const &now)
@@ -365,8 +365,8 @@ bool MiddleWare::verifyChecksum(uint8_t const *pl, size_t size)
 
 checksum_t MiddleWare::rfc1071Checksum(uint8_t const *pl, size_t size)
 {
-    pl = pl; // FIXME: Remove this after implementation
-    size= size; // FIXME: Remove this after implementation
+    (void)pl; // FIXME: Remove this after implementation
+    (void)size; // FIXME: Remove this after implementation
     // FIXME: Implement this
     return 0xaffe;
 }
