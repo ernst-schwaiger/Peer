@@ -12,7 +12,8 @@ namespace rgc {
 typedef struct 
 {
     peerId_t Id;
-    std::string ipaddr;
+    std::string ipaddr_string; // own ip address as printable string
+    in_addr_t ipaddr; // own ip address as inet octet array
     uint16_t udpPort;
     std::string logFile;
     std::string errorInjection;

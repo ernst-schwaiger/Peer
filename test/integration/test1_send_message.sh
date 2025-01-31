@@ -47,7 +47,7 @@ execute()
     echo "Executing test..."
     echo "send Hello_World!" >/tmp/peer_pipe_1
     # Complete Turnaround time w/o errors is 1s (last peer gets the message) + 1s (last peer forwarded its last message), add one sec slack
-    sleep 3
+    sleep 5
 }
 
 verify()

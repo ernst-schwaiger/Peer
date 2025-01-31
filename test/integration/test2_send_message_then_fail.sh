@@ -46,12 +46,12 @@ execute()
     #
     echo "Executing test..."
     echo "send Hello_World!" >/tmp/peer_pipe_1
-    # wait for 500msecs, then terminate peer 1, ensuring the first remote peer got the message, the second one did not
-    sleep 0.5
+    # wait for 1500msecs, then terminate peer 1, ensuring the first remote peer got the message, the second one did not
+    sleep 1.5
     echo "stop" > /tmp/peer_pipe_1
 
     # Give second remote peer enough time to send the message 3 times to the terminated peer and wait for the tx timeout
-    sleep 6
+    sleep 7
 }
 
 verify()

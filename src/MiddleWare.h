@@ -150,7 +150,7 @@ public:
     }
 
     void rxTxLoop(std::chrono::system_clock::time_point const &now);
-    void sendMessage(std::string &message, std::chrono::system_clock::time_point const &now);
+    void sendMessage(std::string const &message, std::chrono::system_clock::time_point const &now);
 
     static bool verifyChecksum(uint8_t const *pl, size_t size);
     static checksum_t rfc1071Checksum(uint8_t const *pl, size_t size);

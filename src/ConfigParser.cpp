@@ -16,6 +16,7 @@ static constexpr uint16_t INVALID_PORT_NUM = UINT16_MAX;
 static constexpr peerId_t DEFAULT_PEER_ID = 1;
 static constexpr uint16_t DEFAULT_PORT_NUM = 4201;
 static constexpr char const * DEFAULT_IP_ADDRESS = "127.0.0.1";
+static constexpr in_addr_t DEFAULT_IP = (1 << 24) + 127; // same address as above, represented as octet stream
 static constexpr char const * DEFAULT_CONFIG_FILE = "./peer.cfg";
 static constexpr char SEPARATOR_CONFIG_FILE = ',';
 static constexpr char COMMENT_TOKEN_CONFIG_FILE = '#';
@@ -130,7 +131,7 @@ static vector<peer_t> readConfigFile(string const &configFilePath)
 std::optional<config_t> rgc::getConfigFromOptions(int argc, char *argv[])
 {
     optional<config_t> ret;
-    config_t parsed_values{ DEFAULT_PEER_ID, DEFAULT_IP_ADDRESS, DEFAULT_PORT_NUM, "", {}, {}, {} };
+    config_t parsed_values{ DEFAULT_PEER_ID, DEFAULT_IP_ADDRESS, DEFAULT_IP, DEFAULT_PORT_NUM, "", {}, {}, {} };
     bool error = false;   
     int8_t c; // in contrast to Intel, char seems to be unsigned on ARM, int8_t works on both architectures
     string configFile = DEFAULT_CONFIG_FILE;
@@ -143,7 +144,7 @@ std::optional<config_t> rgc::getConfigFromOptions(int argc, char *argv[])
             parsed_values.Id = safeStrToI(optarg, INVALID_PEER_ID);
         break;
         case 'a':
-            parsed_values.ipaddr = optarg;
+            parsed_values.ipaddr_string = optarg;
         break;
         case 'p':
             parsed_values.udpPort = safeStrToI(optarg, INVALID_PORT_NUM);
@@ -200,6 +201,14 @@ std::optional<config_t> rgc::getConfigFromOptions(int argc, char *argv[])
             cerr << "Udp port number must be in the range [1025.." << (INVALID_PORT_NUM - 1) << "]\n";
             error = true;
         }
+
+        in_addr tmpAddr;
+        if (inet_aton(parsed_values.ipaddr_string.c_str(), &tmpAddr) < 0)
+        {
+            cerr << "Detected invalid IP V4 address: " << parsed_values.ipaddr_string.c_str() << ".\n";
+            return ret;
+        }
+        parsed_values.ipaddr = tmpAddr.s_addr;
 
         if (parsed_values.logFile.length())
         {

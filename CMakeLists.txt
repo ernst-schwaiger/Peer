@@ -40,6 +40,9 @@ add_executable(Peer
     src/MiddleWare.cpp
     src/UdpSocket.cpp
     )
+    
+# This definition controls whether the peer send the message to itself as well.
+add_definitions(-DPEER_SENDS_TO_ITSELF)
 
 # Increase Warnings, treat warnings as errors
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
@@ -60,11 +63,11 @@ target_link_libraries(Peer PRIVATE fmt::fmt)
 #
 add_executable(PeerTest 
     test/MiddleWareTest.cpp
+    test/ChecksumTest.cpp
     src/MiddleWare.cpp
     )
 
 # for coverage: ensure tests are executed in debug mode
-#set(CMAKE_BUILD_TYPE "Debug")
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_options(PeerTest PRIVATE --coverage)
     target_link_options(PeerTest PRIVATE --coverage)

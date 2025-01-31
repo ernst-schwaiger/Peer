@@ -10,7 +10,7 @@
 using namespace std;
 using namespace rgc;
 
-UdpRxSocket::UdpRxSocket(string const &localIp, uint16_t localPort)
+UdpRxSocket::UdpRxSocket(in_addr_t localIp, uint16_t localPort)
 {
     m_socketDesc = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -22,14 +22,11 @@ UdpRxSocket::UdpRxSocket(string const &localIp, uint16_t localPort)
     // configure for async rx
     int flags = fcntl(m_socketDesc, F_GETFL, 0); 
     fcntl(m_socketDesc, F_SETFL, flags | O_NONBLOCK);
+
+    // configure local IP address and port number
     memset(&m_localSockAddr, 0, sizeof(m_localSockAddr)); 
-    m_localSockAddr.sin_family = AF_INET; 
-
-    if (inet_aton(localIp.c_str(), &m_localSockAddr.sin_addr) < 0)
-    {
-        throw std::runtime_error(fmt::format("Invalid local Ip Address: {}.", localIp));
-    }
-
+    m_localSockAddr.sin_family = AF_INET;
+    m_localSockAddr.sin_addr.s_addr = localIp;
     m_localSockAddr.sin_port = htons(localPort);
 
     // Bind the socket to the specified port 

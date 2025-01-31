@@ -8,7 +8,7 @@ namespace rgc {
 class UdpRxSocket : public IRxSocket
 {
 public:
-    UdpRxSocket(std::string const &localIp, uint16_t localPort);
+    UdpRxSocket(in_addr_t localIp, uint16_t localPort);
     virtual ~UdpRxSocket();
     virtual TransmitStatus receive(rx_buffer_t &buf, struct sockaddr_in &remoteAddr) const;
 

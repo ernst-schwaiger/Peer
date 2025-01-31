@@ -21,7 +21,7 @@ void MiddleWare::rxTxLoop(system_clock::time_point const &now)
     checkPendingTxMessages(now);
 }
 
-void MiddleWare::sendMessage(string &message, system_clock::time_point const &now)
+void MiddleWare::sendMessage(string const &message, system_clock::time_point const &now)
 {
     MessageId msgId = MessageId(m_ownPeerId, m_nextSeqNr);
     payload_t payload;
@@ -37,6 +37,10 @@ void MiddleWare::sendMessage(string &message, system_clock::time_point const &no
 
     m_txMessageStates.emplace_front(msgId, m_txSockets, payload, now);
     ++m_nextSeqNr;
+
+#if defined (PEER_SENDS_TO_ITSELF)
+    setAcceptedSeqNrOfPeer(m_ownPeerId, m_nextSeqNr);
+#endif    
 }
 
 void MiddleWare::listenRxSocket(system_clock::time_point const &now)

@@ -28,9 +28,14 @@ int main(int argc, char *argv[])
         // Named pipe for receiving user commands
         string pipe_path = fmt::format("/tmp/peer_pipe_{}", (*optConfig).Id);
         // Rx Socket for receiving messages from other peers
-        auto udpRxSocket = make_unique<UdpRxSocket>(std::string((*optConfig).ipaddr), (*optConfig).udpPort);
+        auto udpRxSocket = make_unique<UdpRxSocket>((*optConfig).ipaddr, (*optConfig).udpPort);
         vector<unique_ptr<UdpTxSocket>> udpTxSockets;
         vector<ITxSocket *> txSockets;
+#if defined (PEER_SENDS_TO_ITSELF)
+        peer_t self { (*optConfig).Id, (*optConfig).udpPort, (*optConfig).ipaddr };
+        udpTxSockets.push_back(std::make_unique<UdpTxSocket>(self, udpRxSocket->getSocketDescriptor()));
+        txSockets.push_back(udpTxSockets.back().get());
+#endif
         // Tx Sockets for each remote peer for sending messages
         for (auto const &peer : (*optConfig).peers)
         {
@@ -39,7 +44,7 @@ int main(int argc, char *argv[])
         }    
 
         App myApp((*optConfig).Id, udpRxSocket.get(), txSockets, (*optConfig).logFile, pipe_path);
-        myApp.log(IApp::LOG_TYPE::MSG, fmt::format("Starting peer {} on {}:{}", (*optConfig).Id, (*optConfig).ipaddr, (*optConfig).udpPort));
+        myApp.log(IApp::LOG_TYPE::MSG, fmt::format("Starting peer {} on {}:{}", (*optConfig).Id, (*optConfig).ipaddr_string, (*optConfig).udpPort));
         myApp.run();
         myApp.log(IApp::LOG_TYPE::MSG, fmt::format("Shutting down peer {}", (*optConfig).Id));
     }
