@@ -1,7 +1,7 @@
 #pragma once
-
+#include <numeric>
 #include <vector>
-#include <forward_list>
+#include <list>
 #include <chrono>
 #include <algorithm>
 #include <cctype>
@@ -117,6 +117,15 @@ public:
         return (it == end(m_txStates)) ? nullptr : &m_txStates[std::distance(begin(m_txStates), it)];
     }
 
+    bool isAllAcknowledged() const
+    {
+        return std::accumulate(std::begin(m_txStates), std::end(m_txStates), true, 
+            [](bool acc, auto &e)
+            {
+                return (acc && e.isAcknowledged());
+            });
+    }
+
     rgc::payload_t const &getPayload() const
     {
         return m_payload;
@@ -201,7 +210,7 @@ private:
     std::vector<ITxSocket *> &m_txSockets;
     std::vector<nextSeqNr_t> m_nextSeqNrs;
 
-    std::forward_list<TxMessageState> m_txMessageStates;
+    std::list<TxMessageState> m_txMessageStates;
 };
 
 }

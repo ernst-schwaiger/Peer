@@ -1,4 +1,3 @@
-#include <numeric>
 #include <fmt/core.h>
 #include <fmt/ranges.h>
 #include <sstream>
@@ -35,7 +34,7 @@ void MiddleWare::sendMessage(string const &message, system_clock::time_point con
     payload.push_back(checksum >> 8);
     payload.push_back(checksum & 0xff);
 
-    m_txMessageStates.emplace_front(msgId, m_txSockets, payload, now);
+    m_txMessageStates.emplace_back(msgId, m_txSockets, payload, now);
     ++m_nextSeqNr;
 
 #if defined (PEER_SENDS_TO_ITSELF)
@@ -81,7 +80,6 @@ void MiddleWare::injectError(rgc::payload_t &payload) const
 
 void MiddleWare::checkPendingTxMessages(system_clock::time_point const &now)
 {
-    auto itBefore = m_txMessageStates.before_begin();
     for (auto it = begin(m_txMessageStates); it != end(m_txMessageStates); ++it)
     {
         auto &txMsgState = *it;
@@ -94,24 +92,13 @@ void MiddleWare::checkPendingTxMessages(system_clock::time_point const &now)
                 processTxMessage(txState, txMsgState.getPayload(), now);
             }
         }
+    }
 
-        bool allAck = accumulate(begin(txStates), end(txStates), true, 
-            [](bool acc, auto &e)
-            {
-                return (acc && e.isAcknowledged());
-            });
-
-        if (allAck)
-        {
-            // Deliver message to app
-            m_pApp->deliverMessage(txMsgState.getMsgId(), txMsgState.getPayload());
-            // Dispose of this element
-            m_txMessageStates.erase_after(itBefore);
-            // Step back to previous element, ours is invalid now
-            it = itBefore;
-        }
-
-        itBefore = it;
+    if (!m_txMessageStates.empty())
+    {
+        auto deliver_if_acked = [&](const TxMessageState &s){ if (s.isAllAcknowledged()) { m_pApp->deliverMessage(s.getMsgId(), s.getPayload()); } };
+        for_each(begin(m_txMessageStates), end(m_txMessageStates), deliver_if_acked);
+        m_txMessageStates.erase(remove_if(begin(m_txMessageStates), end(m_txMessageStates), [](const TxMessageState &s){ return s.isAllAcknowledged(); }), end(m_txMessageStates));
     }
 }
 
@@ -233,7 +220,7 @@ void MiddleWare::processRxDataMessage(rgc::payload_t const &payload, peerId_t pe
     {
         // No such message found in the state, set up anew
         m_pApp->log(IApp::LOG_TYPE::DEBUG, fmt::format("Received data message {} from {}.", toString(payload), toString(remoteSockAddr)));
-        m_txMessageStates.emplace_front(msgId, m_txSockets, payload, now);
+        m_txMessageStates.emplace_back(msgId, m_txSockets, payload, now);
         setAcceptedSeqNrOfPeer(peerId, seqNr + 1);
     }
     else
