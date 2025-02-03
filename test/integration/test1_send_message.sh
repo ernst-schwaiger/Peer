@@ -53,17 +53,17 @@ execute()
 verify()
 {
     echo "Analyzing logs..."
-    DELIVERD_PEER=$(cat peer1.log | grep "Delivered" | grep "Hello_World" | grep "\[1,0\]")
+    DELIVERD_PEER=$(cat peer1.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
     if [ -z "${DELIVERD_PEER}" ]; then
         echo "Test failed, peer1 did not deliver message!" >&2
         exit 1
     fi
-    DELIVERD_PEER=$(cat peer2.log | grep "Delivered" | grep "Hello_World" | grep "\[1,0\]")
+    DELIVERD_PEER=$(cat peer2.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
     if [ -z "${DELIVERD_PEER}" ]; then
         echo "Test failed, peer2 did not deliver message!" >&2
         exit 1
     fi
-    DELIVERD_PEER=$(cat peer3.log | grep "Delivered" | grep "Hello_World" | grep "\[1,0\]")
+    DELIVERD_PEER=$(cat peer3.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
     if [ -z "${DELIVERD_PEER}" ]; then
         echo "Test failed, peer3 did not deliver message!" >&2
         exit 1

@@ -46,36 +46,42 @@ execute()
     #
     echo "Executing test..."
     echo "send Hello_World!" >/tmp/peer_pipe_1
-    # wait for 1500msecs, then terminate peer 1, ensuring the first remote peer got the message, the second one did not
+    # Peer 1 receives ACK from peer 2 and then fails.
     sleep 1.5
-    echo "stop" > /tmp/peer_pipe_1
+    echo "stop" > /tmp/peer_pipe_1 
+    # Peer 2 receives ACK from self, but then fails.
+    sleep 1.0
+    echo "stop" > /tmp/peer_pipe_2 
 
-    # Give second remote peer enough time to send the message 3 times to the terminated peer and wait for the tx timeout
-    sleep 7
+    # Time for the mechanism to recognize that no further communication is taking place
+    sleep 3
 }
 
 verify()
 {
     echo "Analyzing logs..."
-    DELIVERD_PEER=$(cat peer1.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
-    if [ ! -z "${DELIVERD_PEER}" ]; then
-        echo "Test failed, peer1 *did* deliver message, although it should have terminated!" >&2
+    # Peer 1 should have delivered the message, but then fail
+    DELIVERED_PEER=$(cat peer1.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
+    if [ ! -z "${DELIVERED_PEER}" ]; then
+        echo "Test failed, peer1 did NOT deliver message before failing!" >&2
         exit 1
     fi
-    DELIVERD_PEER=$(cat peer2.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
-    if [ -z "${DELIVERD_PEER}" ]; then
-        echo "Test failed, peer2 did not deliver message!" >&2
+    # Peer 2 should have received the message and sent itself ACK, but not forward it
+    DELIVERED_PEER=$(cat peer2.log | grep "ACK" | grep "Hello_World!" | grep "\[1,0\]")
+    if [ ! -z "${DELIVERED_PEER}" ]; then
+        echo "Test failed, peer2 did NOT ACKnowledge itself before failing!" >&2
         exit 1
     fi
-    DELIVERD_PEER=$(cat peer3.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
-    if [ -z "${DELIVERD_PEER}" ]; then
-        echo "Test failed, peer3 did not deliver message!" >&2
+    # Peer 3 should NOT have received the message
+    DELIVERED_PEER=$(cat peer3.log | grep "Received" | grep "Hello_World!" | grep "\[1,0\]")
+    if [ ! -z "${DELIVERED_PEER}" ]; then
+        echo "Test failed, peer3 should NOT have received the message!" >&2
         exit 1
     fi
 }
 
 if [ "$#" -ne 1 ]; then
-    echo "Usage: $1 <PeerBinary>" >&2
+    echo "Usage: $0 <PeerBinary>" >&2
     exit 1
 fi
 
