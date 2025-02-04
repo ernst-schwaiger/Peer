@@ -1,12 +1,2 @@
 
-[32m2025-01-05 10:33:08.219 - Starting peer 2 on 127.0.0.1:4202
-[0m[34m2025-01-05 10:33:08.869 - Received data message [1,0]["Hello_World!"][0xaffe] from 127.0.0.1:4201.
-[0m[32m2025-01-05 10:33:08.869 - Sending message [1,0]["Hello_World!"][0xaffe] to 127.0.0.1:4201.
-[0m[34m2025-01-05 10:33:08.974 - Received ACK for sent message [1,0][0xaffe] from 127.0.0.1:4201.
-[0m[32m2025-01-05 10:33:09.919 - Sending message [1,0]["Hello_World!"][0xaffe] to 127.0.0.1:4203.
-[0m[34m2025-01-05 10:33:10.026 - Received ACK for sent message [1,0][0xaffe] from 127.0.0.1:4203.
-[0m[32m2025-01-05 10:33:10.026 - Delivered message [1,0]["Hello_World!"][0xaffe] to application layer.
-[0m[34m2025-01-05 10:33:11.089 - Discarding message due to SeqNr: [1,0]["Hello_World!"][0xaffe] from 127.0.0.1:4203.
-[0m[34m2025-01-05 10:33:15.300 - stop
-[0m[32m2025-01-05 10:33:15.300 - Shutting down peer 2
-[0m
+[32m2025-02-04 19:56:24.752 - Starting peer 2 on 127.0.0.1:4202

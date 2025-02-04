@@ -1,9 +1,2 @@
 
-[32m2025-01-05 10:33:08.219 - Starting peer 1 on 127.0.0.1:4201
-[0m[34m2025-01-05 10:33:08.748 - send Hello_World!
-[0m[32m2025-01-05 10:33:08.859 - Sending message [1,0]["Hello_World!"][0xaffe] to 127.0.0.1:4202.
-[0m[34m2025-01-05 10:33:08.963 - Received ACK for sent message [1,0][0xaffe] from 127.0.0.1:4202.
-[0m[34m2025-01-05 10:33:08.964 - Discarding message due to SeqNr: [1,0]["Hello_World!"][0xaffe] from 127.0.0.1:4202.
-[0m[34m2025-01-05 10:33:09.284 - stop
-[0m[32m2025-01-05 10:33:09.285 - Shutting down peer 1
-[0m
+[32m2025-02-04 19:56:24.752 - Starting peer 1 on 127.0.0.1:4201

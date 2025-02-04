@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Peer 1 und Peer 2 fallen aus, sodass Peer 3 die Nachricht nicht erhält.
+#Szenario: Peer 2 fällt aus, bevor er die Nachricht an Peer 3 weiterleiten kann.
 
 startup_peers() 
 {
@@ -48,11 +48,10 @@ execute()
     #
     echo "Executing test..."
     echo "send Hello_World!" >/tmp/peer_pipe_1
-    # Peer 1 receives ACK from peer 2 and then fails.
+    # Peer 1 receives ACK from peer 2.
     sleep 1.5
-    echo "stop" > /tmp/peer_pipe_1 
-    # Peer 2 receives ACK from self, but then fails.
-    sleep 1.0
+    
+    # Peer 2 stops bevor sending the message
     echo "stop" > /tmp/peer_pipe_2 
 
     # Time for the mechanism to recognize that no further communication is taking place
@@ -62,16 +61,22 @@ execute()
 verify()
 {
     echo "Analyzing logs..."
-    # Peer 1 should have delivered the message, but then fail
+    # Peer 1 should have delivered the message
     DELIVERED_PEER=$(cat peer1.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
-    if [ ! -z "${DELIVERED_PEER}" ]; then
+    if [ -z "${DELIVERED_PEER}" ]; then
         echo "Test failed, peer1 did NOT deliver message before failing!" >&2
         exit 1
     fi
-    # Peer 2 should have received the message and sent itself ACK, but not forward it
-    DELIVERED_PEER=$(cat peer2.log | grep "ACK" | grep "Hello_World!" | grep "\[1,0\]")
+    # Peer 2 should have received the message
+    DELIVERED_PEER=$(cat peer2.log | grep "Received" | grep "Hello_World!" | grep "\[1,0\]")
+    if [ -z "${DELIVERED_PEER}" ]; then
+        echo "Test failed, peer2 did NOT receive message before failing!" >&2
+        exit 1
+    fi
+    # Peer 2 should not have delivered the message
+    DELIVERED_PEER=$(cat peer2.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
     if [ ! -z "${DELIVERED_PEER}" ]; then
-        echo "Test failed, peer2 did NOT ACKnowledge itself before failing!" >&2
+        echo "Test failed, peer2 DID deliver message before failing!" >&2
         exit 1
     fi
     # Peer 3 should NOT have received the message
