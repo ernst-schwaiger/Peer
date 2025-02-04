@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <string>
+#include <optional>
 
 #include "IApp.h"
 #include "ISocket.h"
@@ -16,7 +17,7 @@ namespace rgc
 class App : public IApp
 {
 public:
-    App(peerId_t ownPeerId, IRxSocket *pRxSocket, std::vector<ITxSocket *> &txSockets, std::string const &logFile, std::string const &pipe_path);
+    App(peerId_t ownPeerId, IRxSocket *pRxSocket, std::vector<ITxSocket *> &txSockets, std::string const &logFile, std::string const &pipe_path, std::optional<bitflip_t> bitFlipInfo);
     virtual ~App();
     virtual void deliverMessage(MessageId msgId, payload_t const &payload) const;
     virtual void run();

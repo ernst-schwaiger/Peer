@@ -19,6 +19,7 @@ typedef struct
     std::string errorInjection;
     std::vector<peer_t> peers;
     std::vector<std::string> freeParams;
+    std::optional<bitflip_t> bitFlipInfo;
 } config_t;
 
 extern std::optional<config_t> getConfigFromOptions(int argc, char *argv[]);

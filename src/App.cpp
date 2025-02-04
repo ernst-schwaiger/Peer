@@ -21,8 +21,8 @@ static constexpr char SEPARATOR_COMMAND = ' ';
 namespace rgc
 {
 
-App::App(peerId_t ownPeerId, IRxSocket *pRxSocket, vector<ITxSocket *> &txSockets, std::string const &logFile, string const &pipe_path) :
-    m_middleWare(this, ownPeerId, pRxSocket, txSockets),
+App::App(peerId_t ownPeerId, IRxSocket *pRxSocket, vector<ITxSocket *> &txSockets, std::string const &logFile, string const &pipe_path, optional<bitflip_t> bitFlipInfo) :
+    m_middleWare(this, ownPeerId, pRxSocket, txSockets, bitFlipInfo),
     m_logger(Logger::makeLogger(logFile)),
     m_pipe_path(pipe_path),
     m_stop(false)

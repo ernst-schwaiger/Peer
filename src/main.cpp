@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
             txSockets.push_back(udpTxSockets.back().get());
         }    
 
-        App myApp((*optConfig).Id, udpRxSocket.get(), txSockets, (*optConfig).logFile, pipe_path);
+        App myApp((*optConfig).Id, udpRxSocket.get(), txSockets, (*optConfig).logFile, pipe_path, (*optConfig).bitFlipInfo);
         myApp.log(IApp::LOG_TYPE::MSG, fmt::format("Starting peer {} on {}:{}", (*optConfig).Id, (*optConfig).ipaddr_string, (*optConfig).udpPort));
         myApp.run();
         myApp.log(IApp::LOG_TYPE::MSG, fmt::format("Shutting down peer {}", (*optConfig).Id));

@@ -75,6 +75,14 @@ void MiddleWare::listenRxSocket(system_clock::time_point const &now)
 
 void MiddleWare::injectError(rgc::payload_t &payload) const
 {
+
+    for (auto it = begin(m_bitFlipInfos); it != end(m_bitFlipInfos); ++it)
+    {
+        // compare bytes 0..1 with it->peerId
+        // compare bytes 2..3 with it->seqNrId
+        // if both are matching, apply bit flip offset (add 16 to bit offset)
+    }
+
     if (payload[0]){}; // FIXME: Remove this after this method is implemented
 }
 

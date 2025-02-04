@@ -98,7 +98,7 @@ class TestApp : public IApp
 {
 public:
     TestApp(IRxSocket *pRxSocket, std::vector<ITxSocket *> &txSockets, size_t numLoops = 10) : 
-        m_middleWare(this, OWN_PEER_ID, pRxSocket, txSockets),
+        m_middleWare(this, OWN_PEER_ID, pRxSocket, txSockets, std::nullopt),
         m_logger(),
         m_numLoops(numLoops),
         m_now() 

@@ -2,6 +2,7 @@
 #include <numeric>
 #include <vector>
 #include <list>
+#include <optional>
 #include <chrono>
 #include <algorithm>
 #include <cctype>
@@ -145,7 +146,7 @@ private:
 class MiddleWare final
 {
 public:
-    MiddleWare(rgc::IApp *pApp, peerId_t ownPeerId, rgc::IRxSocket *pRxSocket, std::vector<ITxSocket *> &txSockets) : 
+    MiddleWare(rgc::IApp *pApp, peerId_t ownPeerId, rgc::IRxSocket *pRxSocket, std::vector<ITxSocket *> &txSockets, std::optional<bitflip_t> bitFlipInfo) : 
         m_pApp(pApp),
         m_ownPeerId(ownPeerId),
         m_nextSeqNr(0),
@@ -155,6 +156,11 @@ public:
         for (auto const &txSocket : txSockets)
         {
             m_nextSeqNrs.push_back({txSocket->getPeerId(), 0});
+        }
+
+        if (bitFlipInfo.has_value())
+        {
+            m_bitFlipInfos.emplace_back(*bitFlipInfo);
         }
     }
 
@@ -209,6 +215,7 @@ private:
     rgc::IRxSocket *m_pRxSocket;
     std::vector<ITxSocket *> &m_txSockets;
     std::vector<nextSeqNr_t> m_nextSeqNrs;
+    std::vector<bitflip_t> m_bitFlipInfos;
 
     std::list<TxMessageState> m_txMessageStates;
 };

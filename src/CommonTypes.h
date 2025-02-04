@@ -20,6 +20,13 @@ typedef struct
     in_addr_t peerIpAddress; // IP V4 address as uint32 in network byte order
 } peer_t;
 
+typedef struct
+{
+    peerId_t peerId;
+    seqNr_t seqNrId;
+    uint16_t bitOffset; // offset of bit to flip
+} bitflip_t;
+
 // Identifies a message originally sent from a specific peer 
 class MessageId final
 {
