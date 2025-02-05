@@ -2,6 +2,7 @@
 #include <fmt/ranges.h>
 #include <sstream>
 #include <iomanip>
+#include <cstdint>
 
 #include "MiddleWare.h"
 
@@ -357,15 +358,41 @@ std::string MiddleWare::toString(rgc::payload_t const &payload)
 
 bool MiddleWare::verifyChecksum(uint8_t const *pl, size_t size)
 {
-    checksum_t checksum = (pl[size - 2] << 8) + pl[size - 1];
-    checksum_t calcChecksum = rfc1071Checksum(pl, size);
-    return (calcChecksum == checksum);
+    uint32_t sum = checksumMethod(pl, size);
+
+    // If all 1s, checksum is valid
+    return (sum == 0xFFFF); 
 }
 
 checksum_t MiddleWare::rfc1071Checksum(uint8_t const *pl, size_t size)
 {
-    (void)pl; // FIXME: Remove this after implementation
-    (void)size; // FIXME: Remove this after implementation
-    // FIXME: Implement this
-    return 0xaffe;
+    uint32_t sum = checksumMethod(pl, size);
+
+    // Return the one's complement of the sum
+    return static_cast<checksum_t>(~sum);
+}
+
+
+uint32_t MiddleWare::checksumMethod(uint8_t const *pl, size_t size)
+{
+    uint32_t sum = 0;
+
+    // Process 16-bit words
+    while (size > 1) {
+        sum += (pl[0] << 8) | pl[1];
+        pl += 2;
+        size -= 2;
+    }
+
+    // Handle an odd byte, if present
+    if (size > 0) {
+        sum += pl[0] << 8;
+    }
+
+    // Fold 32-bit sum into 16 bits
+    while (sum >> 16) {
+        sum = (sum & 0xFFFF) + (sum >> 16);
+    }
+
+    return sum;
 }

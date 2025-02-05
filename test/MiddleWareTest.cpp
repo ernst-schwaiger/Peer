@@ -178,8 +178,8 @@ namespace rgc
         binaryData.payload.push_back(0x34);
 
         // CRC
-        binaryData.payload.push_back(0xaf);
-        binaryData.payload.push_back(0xfe);
+        binaryData.payload.push_back(0xed);
+        binaryData.payload.push_back(0xcb);
 
         binaryData.peer = PEER_1;
 
