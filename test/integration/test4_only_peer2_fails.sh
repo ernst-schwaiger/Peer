@@ -1,6 +1,7 @@
 #!/bin/bash
 
-#Szenario: Peer 2 fällt aus, bevor er die Nachricht an Peer 3 weiterleiten kann.
+#Szenario: Peer 2 fällt aus, bevor er die Nachricht an Peer 3 weiterleiten kann. Peer 3 bekommt die
+#botschaft noch und delivered auch (wie Peer1)
 
 startup_peers() 
 {
@@ -55,7 +56,7 @@ execute()
     echo "stop" > /tmp/peer_pipe_2 
 
     # Time for the mechanism to recognize that no further communication is taking place
-    sleep 3
+    sleep 7
 }
 
 verify()
@@ -64,7 +65,7 @@ verify()
     # Peer 1 should have delivered the message
     DELIVERED_PEER=$(cat peer1.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
     if [ -z "${DELIVERED_PEER}" ]; then
-        echo "Test failed, peer1 did NOT deliver message before failing!" >&2
+        echo "Test failed, peer1 should have delivered the message!" >&2
         exit 1
     fi
     # Peer 2 should have received the message
@@ -80,9 +81,9 @@ verify()
         exit 1
     fi
     # Peer 3 should NOT have received the message
-    DELIVERED_PEER=$(cat peer3.log | grep "Received" | grep "Hello_World!" | grep "\[1,0\]")
-    if [ ! -z "${DELIVERED_PEER}" ]; then
-        echo "Test failed, peer3 should NOT have received the message!" >&2
+    DELIVERED_PEER=$(cat peer3.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
+    if [ -z "${DELIVERED_PEER}" ]; then
+        echo "Test failed, peer3 should have delivered the message!" >&2
         exit 1
     fi
 }

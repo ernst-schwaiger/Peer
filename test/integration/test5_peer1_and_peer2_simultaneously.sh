@@ -65,19 +65,19 @@ verify()
         exit 1
     fi
     # Peer 1 should have sent itself ACK
-    DELIVERED_PEER=$(cat peer1.log | grep "ACK" | grep "Hello_World1!" | grep "\[1,0\]")
+    DELIVERED_PEER=$(cat peer1.log | grep "Received ACK for sent message \[1,0\]" | grep "from 127.0.0.1:4201")
     if [ -z "${DELIVERED_PEER}" ]; then
         echo "Test failed, peer1 did NOT ACKnowledge itself!" >&2
         exit 1
     fi
     # Peer 2 should have received the message and sent itself ACK
-    DELIVERED_PEER=$(cat peer2.log | grep "ACK" | grep "Hello_World1!" | grep "\[1,0\]")
+    DELIVERED_PEER=$(cat peer2.log | grep "Received ACK for sent message \[1,0\]" | grep "from 127.0.0.1:4202")
     if [ -z "${DELIVERED_PEER}" ]; then
         echo "Test failed, peer2 did NOT ACKnowledge itself!" >&2
         exit 1
     fi
     # Peer 2 should have delivered the message
-    DELIVERED_PEER=$(cat peer2.log | grep "Delivered" | grep "Hello_World2!" | grep "\[1,0\]")
+    DELIVERED_PEER=$(cat peer2.log | grep "Delivered" | grep "Hello_World2!" | grep "\[2,0\]")
     if [ -z "${DELIVERED_PEER}" ]; then
         echo "Test failed, peer2 did NOT deliver message!" >&2
         exit 1
@@ -89,7 +89,7 @@ verify()
         exit 1
     fi
     # Peer 3 should have received the message 2
-    DELIVERED_PEER=$(cat peer3.log | grep "Received" | grep "Hello_World2!" | grep "\[1,0\]")
+    DELIVERED_PEER=$(cat peer3.log | grep "Received" | grep "Hello_World2!" | grep "\[2,0\]")
     if [ -z "${DELIVERED_PEER}" ]; then
         echo "Test failed, peer3 SHOULD have received the message from Peer2!" >&2
         exit 1

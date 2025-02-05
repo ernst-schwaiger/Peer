@@ -54,7 +54,6 @@ generates a `Peer/debug/coverage.html` indicating covered/not covered parts of t
 
 * Error Injection
 * RFC 1071 CRC Implementation
-* Check if we lose incoming Udp Packets due to async Rx processing
 
 ## Open for Clarification
 

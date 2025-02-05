@@ -90,7 +90,12 @@ static optional<bitflip_t> getBitFlipInfo(string const &bitFlip)
 
     if (((intPeerId != INVALID_BIT_FLIP) && (intMsgIdx != INVALID_BIT_FLIP) && (intBitOffset != INVALID_BIT_FLIP)))
     {
-        ret = make_optional<bitflip_t>({static_cast<peerId_t>(intPeerId), static_cast<seqNr_t>(intMsgIdx), static_cast<uint16_t>(intBitOffset)});
+        // extra ugly code for MACs :-)
+        bitflip_t tmp;
+        tmp.peerId = static_cast<peerId_t>(intPeerId);
+        tmp.seqNrId = static_cast<seqNr_t>(intMsgIdx);
+        tmp.bitOffset = static_cast<uint16_t>(intBitOffset);
+        ret = make_optional<bitflip_t>(tmp);
     }
 
     return ret;
