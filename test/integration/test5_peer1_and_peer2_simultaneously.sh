@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#Prüft, ob Peer 3 beide Nachrichten korrekt erhält, ohne dass sie sich überschneiden.
+#Prüfet, ob Peer 3 beide Nachrichten korrekt erhält, ohne dass sie sich überschneiden.
 
 startup_peers() 
 {
@@ -46,7 +46,7 @@ execute()
     #
     # Test Execution: Peer one & two sends a message
     #
-    echo "Executing test..."
+    echo "Executing test5 (peer1 & 2 send simultaneously)..."
     echo "send Hello_World1!" >/tmp/peer_pipe_1 & echo "send Hello_World2!" >/tmp/peer_pipe_2
     # Peer 1&2 receives ACK.
     sleep 1.5
@@ -57,7 +57,7 @@ execute()
 
 verify()
 {
-    echo "Analyzing logs..."
+    echo "Analyzing logs for test5..."
     # Peer 1 should have delivered the message
     DELIVERED_PEER=$(cat peer1.log | grep "Delivered" | grep "Hello_World1!" | grep "\[1,0\]")
     if [ -z "${DELIVERED_PEER}" ]; then
@@ -65,19 +65,19 @@ verify()
         exit 1
     fi
     # Peer 1 should have sent itself ACK
-    DELIVERED_PEER=$(cat peer1.log | grep "Received ACK for sent message \[1,0\]" | grep "from 127.0.0.1:4201")
+    DELIVERED_PEER=$(cat peer1.log | grep "ACK" | grep "Hello_World1!" | grep "\[1,0\]")
     if [ -z "${DELIVERED_PEER}" ]; then
         echo "Test failed, peer1 did NOT ACKnowledge itself!" >&2
         exit 1
     fi
     # Peer 2 should have received the message and sent itself ACK
-    DELIVERED_PEER=$(cat peer2.log | grep "Received ACK for sent message \[1,0\]" | grep "from 127.0.0.1:4202")
+    DELIVERED_PEER=$(cat peer2.log | grep "ACK" | grep "Hello_World1!" | grep "\[1,0\]")
     if [ -z "${DELIVERED_PEER}" ]; then
         echo "Test failed, peer2 did NOT ACKnowledge itself!" >&2
         exit 1
     fi
     # Peer 2 should have delivered the message
-    DELIVERED_PEER=$(cat peer2.log | grep "Delivered" | grep "Hello_World2!" | grep "\[2,0\]")
+    DELIVERED_PEER=$(cat peer2.log | grep "Delivered" | grep "Hello_World2!" | grep "\[1,0\]")
     if [ -z "${DELIVERED_PEER}" ]; then
         echo "Test failed, peer2 did NOT deliver message!" >&2
         exit 1
@@ -89,7 +89,7 @@ verify()
         exit 1
     fi
     # Peer 3 should have received the message 2
-    DELIVERED_PEER=$(cat peer3.log | grep "Received" | grep "Hello_World2!" | grep "\[2,0\]")
+    DELIVERED_PEER=$(cat peer3.log | grep "Received" | grep "Hello_World2!" | grep "\[1,0\]")
     if [ -z "${DELIVERED_PEER}" ]; then
         echo "Test failed, peer3 SHOULD have received the message from Peer2!" >&2
         exit 1

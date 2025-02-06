@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Peer 1 und Peer 2 fallen aus, sodass Peer 3 die Nachricht nicht erhält.
+# Peer 1 und Peer 2 fallen aus, sodass Peer 3 die Nachricht nicht erhält. Seite 132 von DSD Communication-Folien
 
 startup_peers() 
 {
@@ -46,7 +46,7 @@ execute()
     #
     # Test Execution: Peer one sends a message
     #
-    echo "Executing test..."
+    echo "Executing test3 (peer 1 & 2 fail)..."
     echo "send Hello_World!" >/tmp/peer_pipe_1
     # Peer 1 receives ACK from peer 2 and then fails.
     sleep 1.5
@@ -62,16 +62,16 @@ execute()
 
 verify()
 {
-    echo "Analyzing logs..."
+    echo "Analyzing logs for test3..."
     # Peer 1 should have delivered the message, but then fail
-    # DELIVERED_PEER=$(cat peer1.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
-    # if [ -n "${DELIVERED_PEER}" ]; then
-    #     echo "Test failed, peer1 did NOT deliver message before failing!" >&2
-    #     exit 1
-    # fi
+    DELIVERED_PEER=$(cat peer1.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
+    if [ -z "${DELIVERED_PEER}" ]; then
+        echo "Test failed, peer1 did NOT deliver message before failing!" >&2
+        exit 1
+    fi
     # Peer 2 should have received the message and sent itself ACK, but not forward it
     DELIVERED_PEER=$(cat peer2.log | grep "ACK" | grep "Hello_World!" | grep "\[1,0\]")
-    if [ ! -z "${DELIVERED_PEER}" ]; then
+    if [ -z "${DELIVERED_PEER}" ]; then
         echo "Test failed, peer2 did NOT ACKnowledge itself before failing!" >&2
         exit 1
     fi
@@ -79,6 +79,12 @@ verify()
     DELIVERED_PEER=$(cat peer3.log | grep "Received" | grep "Hello_World!" | grep "\[1,0\]")
     if [ ! -z "${DELIVERED_PEER}" ]; then
         echo "Test failed, peer3 should NOT have received the message!" >&2
+        exit 1
+    fi
+    # Check if Peer 1 sent msg to Peer 2
+    DELIVERED_PEER=$(cat peer1.log | grep "Sending message" | grep "4202" | grep "\[1,0\]")
+    if [ -z "${DELIVERED_PEER}" ]; then
+        echo "Test failed, peer1 did NOT send the message to peer2 (4202)!" >&2
         exit 1
     fi
 }

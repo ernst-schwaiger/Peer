@@ -44,7 +44,7 @@ execute()
     #
     # Test Execution: Peer one sends a message
     #
-    echo "Executing test..."
+    echo "Executing test1..."
     echo "send Hello_World!" >/tmp/peer_pipe_1
     # Complete Turnaround time w/o errors is 1s (last peer gets the message) + 1s (last peer forwarded its last message), add one sec slack
     sleep 5
@@ -52,7 +52,7 @@ execute()
 
 verify()
 {
-    echo "Analyzing logs..."
+    echo "Analyzing logs from test1..."
     DELIVERD_PEER=$(cat peer1.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
     if [ -z "${DELIVERD_PEER}" ]; then
         echo "Test failed, peer1 did not deliver message!" >&2

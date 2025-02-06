@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# (Integrity Check) --> Prüft, dass keine Nachricht doppelt geliefert wird. Seite 123.
+
 startup_peers() 
 {
     # Reset logs so we only find the output of this test case in them
@@ -41,41 +43,27 @@ shutdown_peers()
 
 execute()
 {
-    #
-    # Test Execution: Peer one sends a message
-    #
-    echo "Executing test2..."
-    echo "send Hello_World!" >/tmp/peer_pipe_1
-    # wait for 1500msecs, then terminate peer 1, ensuring the first remote peer got the message, the second one did not
-    sleep 1.5
-    echo "stop" > /tmp/peer_pipe_1
-
-    # Give second remote peer enough time to send the message 3 times to the terminated peer and wait for the tx timeout
-    sleep 7
+    echo "Executing test6 (Integrity Test)..."
+    echo "send Integrity_Test!" >/tmp/peer_pipe_1
+    sleep 3
 }
 
 verify()
 {
-    echo "Analyzing logs for test2..."
-    DELIVERD_PEER=$(cat peer1.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
-    if [ ! -z "${DELIVERD_PEER}" ]; then
-        echo "Test failed, peer1 *did* deliver message, although it should have terminated!" >&2
-        exit 1
-    fi
-    DELIVERD_PEER=$(cat peer2.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
-    if [ -z "${DELIVERD_PEER}" ]; then
-        echo "Test failed, peer2 did not deliver message!" >&2
-        exit 1
-    fi
-    DELIVERD_PEER=$(cat peer3.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
-    if [ -z "${DELIVERD_PEER}" ]; then
-        echo "Test failed, peer3 did not deliver message!" >&2
+    echo "Analyzing logs for test6..."
+    # Ensure that each peer only delivers the message once (no duplicates)
+    DUPLICATE_PEER1=$(cat peer1.log | grep "Delivered" | grep "Integrity_Test!" | wc -l)
+    DUPLICATE_PEER2=$(cat peer2.log | grep "Delivered" | grep "Integrity_Test!" | wc -l)
+    DUPLICATE_PEER3=$(cat peer3.log | grep "Delivered" | grep "Integrity_Test!" | wc -l)
+
+    if [ "${DUPLICATE_PEER1}" -gt 1 ] || [ "${DUPLICATE_PEER2}" -gt 1 ] || [ "${DUPLICATE_PEER3}" -gt 1 ]; then
+        echo "Test failed, a message WAS delivered more than once!" >&2
         exit 1
     fi
 }
 
 if [ "$#" -ne 1 ]; then
-    echo "Usage: $1 <PeerBinary>" >&2
+    echo "Usage: $0 <PeerBinary>" >&2
     exit 1
 fi
 

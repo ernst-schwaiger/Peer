@@ -32,7 +32,7 @@ execute()
     #
     # Test Execution: Send 100 Messages only to itself, no other peer is present
     #
-    echo "Executing test..."
+    echo "Executing test0..."
 
     for i in $(seq 1 100);
     do
@@ -45,7 +45,7 @@ execute()
 
 verify()
 {
-    echo "Analyzing logs..."
+    echo "Analyzing logs from test0..."
     cat peer1.log | grep "Delivered" | grep "Hello_World" > peer1_delivered.log
     DELIVERED_MSG_NR=$(wc -l peer1_delivered.log | sed 's/\([0-9]*\).*/\1/')
 

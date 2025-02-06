@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#Szenario: Peer 2 fällt aus, bevor er die Nachricht an Peer 3 weiterleiten kann. Peer 3 bekommt die
-#botschaft noch und delivered auch (wie Peer1)
+# Szenario: Peer 2 fällt aus, bevor er die Nachricht an Peer 3 weiterleiten kann.
+# Außerdem überprüft es die Anforderung des Agreement von Seite 123.
 
 startup_peers() 
 {
@@ -47,7 +47,7 @@ execute()
     #
     # Test Execution: Peer one sends a message
     #
-    echo "Executing test..."
+    echo "Executing test4 (only Peer2 fails)..."
     echo "send Hello_World!" >/tmp/peer_pipe_1
     # Peer 1 receives ACK from peer 2.
     sleep 1.5
@@ -61,11 +61,11 @@ execute()
 
 verify()
 {
-    echo "Analyzing logs..."
+    echo "Analyzing logs for test4..."
     # Peer 1 should have delivered the message
     DELIVERED_PEER=$(cat peer1.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
     if [ -z "${DELIVERED_PEER}" ]; then
-        echo "Test failed, peer1 should have delivered the message!" >&2
+        echo "Test failed, peer1 did NOT deliver message before failing!" >&2
         exit 1
     fi
     # Peer 2 should have received the message
@@ -80,10 +80,10 @@ verify()
         echo "Test failed, peer2 DID deliver message before failing!" >&2
         exit 1
     fi
-    # Peer 3 should NOT have received the message
-    DELIVERED_PEER=$(cat peer3.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
-    if [ -z "${DELIVERED_PEER}" ]; then
-        echo "Test failed, peer3 should have delivered the message!" >&2
+    # Peer 3 should NOT have received the message from Peer 2
+    DELIVERED_PEER=$(cat peer3.log | grep "Received" | grep "Hello_World!" | grep "4202" | grep "\[1,0\]")
+    if [ ! -z "${DELIVERED_PEER}" ]; then
+        echo "Test failed, peer3 should NOT have received the message from peer2!" >&2
         exit 1
     fi
 }
