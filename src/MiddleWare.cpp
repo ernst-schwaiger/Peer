@@ -81,7 +81,7 @@ void MiddleWare::injectError(rgc::payload_t &payload) const
                     |  static_cast<unsigned char>(payload[1]);
         uint16_t seqNrIdIdtemp = (static_cast<unsigned char>(payload[2]) << 8)
                     |  static_cast<unsigned char>(payload[3]);
-        if (it->peerId == peerIdtemp && it->seqNrId == seqNrIdIdtemp && (it->bitOffset + 16 < sizeof(payload)*8)){
+        if (it->peerId == peerIdtemp && it->seqNrId == seqNrIdIdtemp && (it->bitOffset + 16 < static_cast<uint16_t>(sizeof(payload)*8))){
             size_t bytePos = (it->bitOffset + 16) / 8;
             size_t bitPos  = (it->bitOffset + 16) % 8;
             payload[bytePos] ^= static_cast<unsigned char>(1 << bitPos);
