@@ -75,15 +75,19 @@ void MiddleWare::listenRxSocket(system_clock::time_point const &now)
 
 void MiddleWare::injectError(rgc::payload_t &payload) const
 {
-
-    for (auto it = begin(m_bitFlipInfos); it != end(m_bitFlipInfos); ++it)
+     for (auto it = begin(m_bitFlipInfos); it != end(m_bitFlipInfos); ++it)
     {
-        // compare bytes 0..1 with it->peerId
-        // compare bytes 2..3 with it->seqNrId
-        // if both are matching, apply bit flip offset (add 16 to bit offset)
+        uint16_t peerIdtemp = (static_cast<unsigned char>(payload[0]) << 8)
+                    |  static_cast<unsigned char>(payload[1]);
+        uint16_t seqNrIdIdtemp = (static_cast<unsigned char>(payload[2]) << 8)
+                    |  static_cast<unsigned char>(payload[3]);
+        if (it->peerId == peerIdtemp && it->seqNrId == seqNrIdIdtemp && (it->bitOffset + 16 < sizeof(payload)*8)){
+            size_t bytePos = (it->bitOffset + 16) / 8;
+            size_t bitPos  = (it->bitOffset + 16) % 8;
+            payload[bytePos] ^= static_cast<unsigned char>(1 << bitPos);
+        }
     }
-
-    if (payload[0]){}; // FIXME: Remove this after this method is implemented
+    
 }
 
 void MiddleWare::checkPendingTxMessages(system_clock::time_point const &now)
