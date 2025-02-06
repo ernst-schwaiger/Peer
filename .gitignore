@@ -35,3 +35,6 @@
 build/*
 debug/*
 release/*
+
+# log files
+*.log
