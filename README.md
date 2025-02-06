@@ -55,10 +55,10 @@ generates a `Peer/debug/coverage.html` indicating covered/not covered parts of t
 * Error Injection
 * RFC 1071 CRC Implementation
 * Add intergration tests
-** Integrity, Validity, Agreement: Slide 123
-** Injecting Udp Packets with invalid PeerId/Sequence Number: Peers should not react...
-** Szenarios with BitFlips
-** Test FiFo and Causal Order of Messages
+   * Integrity, Validity, Agreement: Slide 123
+   * Injecting Udp Packets with invalid PeerId/Sequence Number: Peers should not react...
+   * Szenarios with BitFlips
+   * Test FiFo and Causal Order of Messages
 
 ## Open for Clarification
 
