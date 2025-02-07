@@ -178,8 +178,9 @@ namespace rgc
         binaryData.payload.push_back(0x34);
 
         // CRC
-        binaryData.payload.push_back(0xaf);
-        binaryData.payload.push_back(0xfe);
+        checksum_t checksum = MiddleWare::rfc1071Checksum(binaryData.payload.data(), binaryData.payload.size());
+        binaryData.payload.push_back(checksum >> 8);
+        binaryData.payload.push_back(checksum & 0xff);
 
         binaryData.peer = PEER_1;
 

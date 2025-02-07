@@ -361,15 +361,54 @@ std::string MiddleWare::toString(rgc::payload_t const &payload)
 
 bool MiddleWare::verifyChecksum(uint8_t const *pl, size_t size)
 {
-    checksum_t checksum = (pl[size - 2] << 8) + pl[size - 1];
-    checksum_t calcChecksum = rfc1071Checksum(pl, size);
-    return (calcChecksum == checksum);
+
+    //@Samu: Deine checksumMethod() und rfc1071Checksum() Implementierungen
+    // sind korrekt. Der Bug war hier: Bei "ungerader/odd" Payload geht das
+    // erste Byte der Prüfsumme in das letzte Byte der geprüften Payload über.
+    // Um das zu verhindern, müßtest du bei der verification ein '0' byte
+    // zwischen der Payload und der Prüfsumme einfügen, siehe Beispiel auf
+    // der letzte Seite der RFC1071 Spec
+    // Einfacher ists so:
+    // 1. wir holen uns die Prüfsumme, letzte zwei bytes in der Payload
+    // 2. wir berechnen die Püfsumme der Netto-Payload (ohne angehängte Prüfsumme)
+    // 3. wir summieren auf: Das Ergebnis sollte 0xffff sein.
+    checksum_t plChecksum = (pl[size - 2] << 8) + pl[size - 1];
+    checksum_t sum = checksumMethod(pl, size - 2) + plChecksum;
+
+    // If all 1s, checksum is valid
+    return (sum == 0xFFFF); 
 }
 
 checksum_t MiddleWare::rfc1071Checksum(uint8_t const *pl, size_t size)
 {
-    (void)pl; // FIXME: Remove this after implementation
-    (void)size; // FIXME: Remove this after implementation
-    // FIXME: Implement this
-    return 0xaffe;
+    checksum_t sum = checksumMethod(pl, size);
+
+    // Return the one's complement of the sum
+    return static_cast<checksum_t>(~sum);
+}
+
+
+checksum_t MiddleWare::checksumMethod(uint8_t const *pl, size_t size)
+{
+    uint32_t sum = 0;
+
+    // Process 16-bit words
+    while (size > 1) 
+    {
+        sum += (pl[0] << 8) | pl[1];
+        pl += 2;
+        size -= 2;
+    }
+
+    // Handle an odd byte, if present
+    if (size > 0) {
+        sum += pl[0] << 8;
+    }
+
+    // Fold 32-bit sum into 16 bits
+    while (sum >> 16) {
+        sum = (sum & 0xFFFF) + (sum >> 16);
+    }
+
+    return static_cast<checksum_t>(sum);
 }
