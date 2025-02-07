@@ -169,7 +169,7 @@ public:
 
     static bool verifyChecksum(uint8_t const *pl, size_t size);
     static checksum_t rfc1071Checksum(uint8_t const *pl, size_t size);
-    static uint32_t checksumMethod(uint8_t const *pl, size_t size);
+    static checksum_t checksumMethod(uint8_t const *pl, size_t size);
 
     static std::string toString(struct sockaddr_in const &sockAddr);
     static std::string toString(rgc::payload_t const &payload);
