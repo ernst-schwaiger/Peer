@@ -72,7 +72,7 @@ static bool isValidUdpPort(uint16_t udpPort)
     return ((udpPort > 1024) && (udpPort != INVALID_PORT_NUM));
 }
 
-static optional<bitflip_t> getBitFlipInfo(string const &bitFlip)
+optional<bitflip_t> rgc::getBitFlipInfo(string const &bitFlip)
 {
     optional<bitflip_t> ret = std::nullopt;
     string peerId;
@@ -290,11 +290,12 @@ std::optional<config_t> rgc::getConfigFromOptions(int argc, char *argv[])
 
 void rgc::printUsage(char *argv0)
 {
-    cerr << "Usage: " << argv0 << " [-i <peerId>] [-a <ipaddr>] [-p <udpPort>] [-c <configFile>] [-l <logFile>]\n";
+    cerr << "Usage: " << argv0 << " [-i <peerId>] [-a <ipaddr>] [-p <udpPort>] [-c <configFile>] [-l <logFile>] [-e <errorInject>]\n";
     cerr << "   <peerId>        unique peer id in the range [0.." << INVALID_PEER_ID - 1 << "], default is " << DEFAULT_PEER_ID <<".\n";
     cerr << "   <ipaddr>        local IPV4 address, default is " << DEFAULT_IP_ADDRESS <<".\n";
     cerr << "   <udpPort>       local udp port in the range [1025.." << INVALID_PORT_NUM - 1 << "], default is " << DEFAULT_PORT_NUM << ".\n";
     cerr << "   <configFile>    path to an already existing configuration file, default is " << DEFAULT_CONFIG_FILE << ".\n";
     cerr << "   <logFile>       path to log file. If none is provided stdout/stderr is used.\n";
+    cerr << "   <errorInject>   string of format <peer id>:<msg seq#>:<bit offset> to inject a bit error on the given offset in the specified message of the given peer.\n";
 }
 

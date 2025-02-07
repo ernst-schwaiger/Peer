@@ -24,5 +24,6 @@ typedef struct
 
 extern std::optional<config_t> getConfigFromOptions(int argc, char *argv[]);
 extern void printUsage(char *argv0);
+extern std::optional<bitflip_t> getBitFlipInfo(std::string const &bitFlip);
 }
 

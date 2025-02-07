@@ -138,7 +138,21 @@ void App::processPendingUserCommands()
         }
         else if (command_type == "inject")
         {
-            // FIXME: Implement
+            bool parseOK = false;
+            if (!command_arg1.empty())
+            {
+                optional<bitflip_t> optBitFlipInfo = rgc::getBitFlipInfo(command_arg1);
+                if (optBitFlipInfo.has_value())
+                {
+                    parseOK = true;
+                    m_middleWare.addBitFlipInfo(*optBitFlipInfo);
+                }
+            }
+
+            if (parseOK == false)
+            {
+                log(IApp::LOG_TYPE::ERR, fmt::format("Command: {} requires a string of format <peerId>:<MsgSeqNr>:<bitoffset> as argument", command_type));
+            }
         }
         else
         {
