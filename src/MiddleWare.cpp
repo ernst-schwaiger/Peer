@@ -110,7 +110,8 @@ void MiddleWare::checkPendingTxMessages(system_clock::time_point const &now)
     {
         auto deliver_if_acked = [&](const TxMessageState &s){ if (s.isAllAcknowledged()) { m_pApp->deliverMessage(s.getMsgId(), s.getPayload()); } };
         for_each(begin(m_txMessageStates), end(m_txMessageStates), deliver_if_acked);
-        m_txMessageStates.erase(remove_if(begin(m_txMessageStates), end(m_txMessageStates), [](const TxMessageState &s){ return s.isAllAcknowledged(); }), end(m_txMessageStates));
+        m_txMessageStates.erase(remove_if(begin(m_txMessageStates), end(m_txMessageStates), 
+            [](const TxMessageState &s){ return s.isAllAcknowledged() || s.isTxToSelfFailed(); }), end(m_txMessageStates));
     }
 }
 
@@ -119,11 +120,20 @@ void MiddleWare::processTxMessage(TxState &txState, payload_t const &msg, system
     uint8_t remainingTxAttempts = txState.getRemainingTxAttempts();
     if (remainingTxAttempts == 0)
     {
-        // we did not get an ACK after the third tx attempt. we handle this case
-        // as if it got an ACK
+        // we did not get an ACK after the third tx attempt
         m_pApp->log(IApp::LOG_TYPE::DEBUG, 
             fmt::format("Got no ACK for message {} after max number of retries, giving up.", toString(msg)));
-        txState.setAcknowledged();
+
+        if (txState.getSocket()->getPeerId() == m_ownPeerId)
+        {
+            // This peer is broken since it can't propertly receive its own tx message -> Drop the message
+            txState.setTxToSelfFailed();
+        }
+        else
+        {
+            // The remote peer is broken. We handle this as if we got an ACK
+            txState.setAcknowledged();
+        }
     }
     else
     {

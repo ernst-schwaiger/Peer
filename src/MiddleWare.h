@@ -19,6 +19,7 @@ static constexpr uint8_t MAX_TX_ATTEMPTS = 3;
 
 class MiddleWare;
 
+// Represents the state of an outgoing message w.r.t. one specific sender
 class TxState final
 {
 public:
@@ -26,7 +27,8 @@ public:
         m_timeout(now),
         m_pTxSocket(pTxSocket), 
         m_remainingTxAttempts(MAX_TX_ATTEMPTS), 
-        m_txAcknowledged(false)
+        m_txAcknowledged(false),
+        m_txToSelfFailed(false)
     {}
 
     rgc::ITxSocket const *getSocket() const
@@ -42,6 +44,16 @@ public:
     bool isAcknowledged() const
     {
         return m_txAcknowledged;
+    }
+
+    void setTxToSelfFailed()
+    {
+        m_txToSelfFailed = true;
+    }
+
+    bool isTxToSelfFailed() const
+    {
+        return m_txToSelfFailed;
     }
 
     bool isTimeoutElapsed(std::chrono::system_clock::time_point now) const
@@ -75,8 +87,10 @@ private:
     rgc::ITxSocket *m_pTxSocket;
     uint8_t m_remainingTxAttempts;
     bool m_txAcknowledged;
+    bool m_txToSelfFailed;
 };
 
+// Represents the overall state of an outgoing message
 class TxMessageState final
 {
 public:
@@ -124,6 +138,15 @@ public:
             [](bool acc, auto &e)
             {
                 return (acc && e.isAcknowledged());
+            });
+    }
+
+    bool isTxToSelfFailed() const
+    {
+        return std::accumulate(std::begin(m_txStates), std::end(m_txStates), false, 
+            [](bool acc, auto &e)
+            {
+                return (acc || e.isTxToSelfFailed());
             });
     }
 
