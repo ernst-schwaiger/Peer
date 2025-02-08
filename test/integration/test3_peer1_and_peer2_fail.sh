@@ -20,6 +20,7 @@ startup_peers()
     if [ ! -p /tmp/peer_pipe_1 ]; then
         echo "Test Failed, named pipe \"/tmp/peer_pipe_1\" does not exist!" >&2
         echo "Is ${PEER} the proper binary?" >&2
+        exit 1
     fi
     if [ ! -p /tmp/peer_pipe_2 ]; then
         echo "Test Failed, named pipe \"/tmp/peer_pipe_2\" does not exist!" >&2
@@ -63,14 +64,15 @@ execute()
 verify()
 {
     echo "Analyzing logs for test3..."
-    # Peer 1 should have delivered the message, but then fail
     DELIVERED_PEER=$(cat peer1.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
-    if [ -z "${DELIVERED_PEER}" ]; then
-        echo "Test failed, peer1 did NOT deliver message before failing!" >&2
+    if [ -n "${DELIVERED_PEER}" ]; then
+        echo "Test failed, peer1 DID deliver message although it failed before getting all ACK from the peers!" >&2
         exit 1
     fi
     # Peer 2 should have received the message and sent itself ACK, but not forward it
-    DELIVERED_PEER=$(cat peer2.log | grep "ACK" | grep "Hello_World!" | grep "\[1,0\]")
+    # ACK messages do not contain the message text, grepping for Hello_World wont work
+    #DELIVERED_PEER=$(cat peer2.log | grep "ACK" | grep "Hello_World!" | grep "\[1,0\]")
+    DELIVERED_PEER=$(cat peer2.log | grep "ACK" | grep "\[1,0\]" | grep "from 127.0.0.1:4202")
     if [ -z "${DELIVERED_PEER}" ]; then
         echo "Test failed, peer2 did NOT ACKnowledge itself before failing!" >&2
         exit 1

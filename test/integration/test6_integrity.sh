@@ -20,6 +20,7 @@ startup_peers()
     if [ ! -p /tmp/peer_pipe_1 ]; then
         echo "Test Failed, named pipe \"/tmp/peer_pipe_1\" does not exist!" >&2
         echo "Is ${PEER} the proper binary?" >&2
+        exit 1
     fi
     if [ ! -p /tmp/peer_pipe_2 ]; then
         echo "Test Failed, named pipe \"/tmp/peer_pipe_2\" does not exist!" >&2
@@ -45,7 +46,7 @@ execute()
 {
     echo "Executing test6 (Integrity Test)..."
     echo "send Integrity_Test!" >/tmp/peer_pipe_1
-    sleep 3
+    sleep 5
 }
 
 verify()

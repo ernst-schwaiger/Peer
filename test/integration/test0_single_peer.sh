@@ -4,6 +4,8 @@ startup_peers()
 {
     # Reset logs so we only find the output of this test case in them
     echo "" >peer1.log
+    echo "" >peer2.log
+    echo "" >peer3.log
 
     #
     # Start the Peer processes
@@ -14,6 +16,7 @@ startup_peers()
     if [ ! -p /tmp/peer_pipe_1 ]; then
         echo "Test Failed, named pipe \"/tmp/peer_pipe_1\" does not exist!" >&2
         echo "Is ${PEER} the proper binary?" >&2
+        exit 1
     fi
 }
 

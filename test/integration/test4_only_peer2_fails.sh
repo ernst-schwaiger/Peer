@@ -21,6 +21,7 @@ startup_peers()
     if [ ! -p /tmp/peer_pipe_1 ]; then
         echo "Test Failed, named pipe \"/tmp/peer_pipe_1\" does not exist!" >&2
         echo "Is ${PEER} the proper binary?" >&2
+        exit 1
     fi
     if [ ! -p /tmp/peer_pipe_2 ]; then
         echo "Test Failed, named pipe \"/tmp/peer_pipe_2\" does not exist!" >&2
@@ -56,7 +57,7 @@ execute()
     echo "stop" > /tmp/peer_pipe_2 
 
     # Time for the mechanism to recognize that no further communication is taking place
-    sleep 7
+    sleep 10
 }
 
 verify()
@@ -65,7 +66,7 @@ verify()
     # Peer 1 should have delivered the message
     DELIVERED_PEER=$(cat peer1.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
     if [ -z "${DELIVERED_PEER}" ]; then
-        echo "Test failed, peer1 did NOT deliver message before failing!" >&2
+        echo "Test failed, peer1 did NOT deliver message!" >&2
         exit 1
     fi
     # Peer 2 should have received the message
@@ -80,10 +81,10 @@ verify()
         echo "Test failed, peer2 DID deliver message before failing!" >&2
         exit 1
     fi
-    # Peer 3 should NOT have received the message from Peer 2
-    DELIVERED_PEER=$(cat peer3.log | grep "Received" | grep "Hello_World!" | grep "4202" | grep "\[1,0\]")
-    if [ ! -z "${DELIVERED_PEER}" ]; then
-        echo "Test failed, peer3 should NOT have received the message from peer2!" >&2
+    # Peer 3 should have delivered the message
+    DELIVERED_PEER=$(cat peer3.log | grep "Delivered" | grep "Hello_World!" | grep "\[1,0\]")
+    if [ -z "${DELIVERED_PEER}" ]; then
+        echo "Test failed, peer3 did NOT deliver message" >&2
         exit 1
     fi
 }

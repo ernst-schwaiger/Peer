@@ -18,6 +18,7 @@ startup_peers()
     if [ ! -p /tmp/peer_pipe_1 ]; then
         echo "Test Failed, named pipe \"/tmp/peer_pipe_1\" does not exist!" >&2
         echo "Is ${PEER} the proper binary?" >&2
+        exit 1
     fi
     if [ ! -p /tmp/peer_pipe_2 ]; then
         echo "Test Failed, named pipe \"/tmp/peer_pipe_2\" does not exist!" >&2
@@ -51,7 +52,7 @@ execute()
     echo "stop" > /tmp/peer_pipe_1
 
     # Give second remote peer enough time to send the message 3 times to the terminated peer and wait for the tx timeout
-    sleep 7
+    sleep 9
 }
 
 verify()

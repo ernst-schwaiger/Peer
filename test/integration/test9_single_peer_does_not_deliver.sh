@@ -16,6 +16,7 @@ startup_peers()
     if [ ! -p /tmp/peer_pipe_1 ]; then
         echo "Test Failed, named pipe \"/tmp/peer_pipe_1\" does not exist!" >&2
         echo "Is ${PEER} the proper binary?" >&2
+        exit 1
     fi
 }
 
@@ -42,7 +43,7 @@ execute()
     # ...and the following one via the named pipe
     echo "send Hello_World2!" >/tmp/peer_pipe_1
     # Wait for the timeout for both messages
-    sleep 4
+    sleep 5
 }
 
 verify()
