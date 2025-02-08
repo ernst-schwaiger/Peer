@@ -75,19 +75,16 @@ void MiddleWare::listenRxSocket(system_clock::time_point const &now)
 
 void MiddleWare::injectError(rgc::payload_t &payload) const
 {
-     for (auto it = begin(m_bitFlipInfos); it != end(m_bitFlipInfos); ++it)
+    for (auto it = begin(m_bitFlipInfos); it != end(m_bitFlipInfos); ++it)
     {
-        uint16_t peerIdtemp = (static_cast<unsigned char>(payload[0]) << 8)
-                    |  static_cast<unsigned char>(payload[1]);
-        uint16_t seqNrIdIdtemp = (static_cast<unsigned char>(payload[2]) << 8)
-                    |  static_cast<unsigned char>(payload[3]);
-        if (it->peerId == peerIdtemp && it->seqNrId == seqNrIdIdtemp && (it->bitOffset + 16 < static_cast<uint16_t>(sizeof(payload)*8))){
+        uint16_t peerIdtemp = (payload[0] << 8) + payload[1];
+        uint16_t seqNrIdIdtemp = (payload[2] << 8) + payload[3];
+        if (it->peerId == peerIdtemp && it->seqNrId == seqNrIdIdtemp && (it->bitOffset + 16 < static_cast<uint16_t>(payload.size()*8))){
             size_t bytePos = (it->bitOffset + 16) / 8;
             size_t bitPos  = (it->bitOffset + 16) % 8;
             payload[bytePos] ^= static_cast<unsigned char>(1 << bitPos);
         }
     }
-    
 }
 
 void MiddleWare::checkPendingTxMessages(system_clock::time_point const &now)
@@ -371,17 +368,6 @@ std::string MiddleWare::toString(rgc::payload_t const &payload)
 
 bool MiddleWare::verifyChecksum(uint8_t const *pl, size_t size)
 {
-
-    //@Samu: Deine checksumMethod() und rfc1071Checksum() Implementierungen
-    // sind korrekt. Der Bug war hier: Bei "ungerader/odd" Payload geht das
-    // erste Byte der Prüfsumme in das letzte Byte der geprüften Payload über.
-    // Um das zu verhindern, müßtest du bei der verification ein '0' byte
-    // zwischen der Payload und der Prüfsumme einfügen, siehe Beispiel auf
-    // der letzte Seite der RFC1071 Spec
-    // Einfacher ists so:
-    // 1. wir holen uns die Prüfsumme, letzte zwei bytes in der Payload
-    // 2. wir berechnen die Püfsumme der Netto-Payload (ohne angehängte Prüfsumme)
-    // 3. wir summieren auf: Das Ergebnis sollte 0xffff sein.
     checksum_t plChecksum = (pl[size - 2] << 8) + pl[size - 1];
     checksum_t sum = checksumMethod(pl, size - 2) + plChecksum;
 

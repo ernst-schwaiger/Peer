@@ -15,7 +15,7 @@
 
 namespace rgc {
 
-static constexpr uint8_t MAX_TX_ATTEMPTS = 3;
+static constexpr uint8_t MAX_TX_ATTEMPTS = 4;
 
 class MiddleWare;
 

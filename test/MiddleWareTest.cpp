@@ -218,10 +218,16 @@ namespace rgc
         // Our node shall wait for an ACK to arrive, no message delivered to app
         REQUIRE(p.app.deliveredMsgs.empty());
         p.app.numLoops(1).run();
+        // No ACK arrived, our node repeats transmission
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 5);
+        p.app.numLoops(9).run();
+        // Our node shall wait for an ACK to arrive, message delivered to app
+        REQUIRE(p.app.deliveredMsgs.empty());
+        p.app.numLoops(1).run();
         REQUIRE(p.app.deliveredMsgs.size() == 1);
         // Nothing more shall happen in our node
         p.app.numLoops(100).run(); 
-        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 4); 
+        REQUIRE(p.txSocks[0].m_sentPayloads.size() == 5); 
         REQUIRE(p.app.deliveredMsgs.size() == 1);
     }
 
